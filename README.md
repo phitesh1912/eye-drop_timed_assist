@@ -25,9 +25,14 @@ A new version installs over the old one and keeps the records.
 
 ## Install on iPhone
 
-One-time setup by the owner of this GitHub repository: open **Settings → Pages**, under *Build and deployment*
-choose **Deploy from a branch**, pick the branch `claude/eye-drops-reminder-app-65ukaj` and the **/docs** folder, then **Save**.
-After a minute the app is live at **https://phitesh1912.github.io/eye-drop_timed_assist/**
+The web app is the `docs/` folder. Host it once, either way:
+
+- **Vercel (easiest):** on [vercel.com](https://vercel.com) sign in with GitHub, choose **Add New → Project**, import
+  `eye-drop_timed_assist` and press **Deploy**. `vercel.json` already tells Vercel to serve `docs/` with no build step.
+  You get a link like `https://eye-drop-timed-assist.vercel.app`, and every push updates it.
+- **Or GitHub Pages:** in the repository open **Settings → Pages**, choose **Deploy from a branch**, pick
+  `claude/eye-drops-reminder-app-65ukaj` and **/docs**, then **Save**. The app is then at
+  **https://phitesh1912.github.io/eye-drop_timed_assist/**
 
 On the iPhone:
 
