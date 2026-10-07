@@ -1,0 +1,89 @@
+name: Android app
+
+on:
+  push:
+    paths:
+      - 'android/**'
+      - 'docs/**'
+      - 'tools/**'
+      - '.github/workflows/android.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+
+      # Icons, alarm sound, calendar file and the signing key are generated
+      # here, so the repository only needs text files.
+      - name: Generate missing icons, sound, calendar and signing key
+        run: |
+          if [ ! -f docs/icons/icon-192.png ] || [ ! -f android/app/src/main/res/raw/chime.wav ]; then
+            pip install --quiet pillow
+            python3 tools/make-assets.py
+          fi
+          if [ ! -f docs/calendar/drop-time.ics ]; then
+            TZ=Asia/Kolkata node tools/build-ics.mjs
+          fi
+          if [ ! -f android/keystore/droptime-release.jks ]; then
+            base64 -d android/keystore/droptime-release.jks.b64 > android/keystore/droptime-release.jks
+          fi
+
+      # GitHub Pages serves the web app straight from this branch, so it needs these files too.
+      - name: Save generated files to the branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A docs android/app/src/main/res android/keystore
+          if ! git diff --cached --quiet; then
+            git commit -m "Add generated icons, alarm sound, calendar and signing key"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
+
+      - name: Build the APK
+        run: gradle --no-daemon -p android assembleRelease -PversionCode=${{ github.run_number }} -PversionName=1.0.${{ github.run_number }}
+
+      - name: Name the file
+        run: cp android/app/build/outputs/apk/release/app-release.apk DropTime.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DropTime-apk
+          path: DropTime.apk
+
+      - name: Publish as a release (download link for the phone)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="1.0.${{ github.run_number }}"
+          gh release create "android-v$version" DropTime.apk \
+            --repo "${{ github.repository }}" \
+            --target "$(git rev-parse HEAD)" \
+            --title "Drop Time for Android $version" \
+            --latest \
+            --notes "Open this page on the Android phone and tap DropTime.apk to download, then Install. A new version installs over the old one and keeps all records."

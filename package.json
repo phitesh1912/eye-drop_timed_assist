@@ -1,0 +1,10 @@
+{
+  "name": "drop-time",
+  "private": true,
+  "type": "module",
+  "description": "Eye drop reminder for Grandma's cataract recovery (web app + Android app)",
+  "scripts": {
+    "test": "TZ=Asia/Kolkata node --test tests/*.test.mjs",
+    "build:ics": "TZ=Asia/Kolkata node tools/build-ics.mjs"
+  }
+}

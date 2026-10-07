@@ -1,0 +1,67 @@
+plugins {
+    id 'com.android.application'
+}
+
+// The app shows the same web app as the iPhone version (../docs), bundled so it works offline.
+def webApp = rootProject.file('../docs')
+def bundledWeb = layout.buildDirectory.dir('generated/bundledWeb')
+
+android {
+    namespace 'app.droptime.eyedrops'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'app.droptime.eyedrops'
+        minSdk 26
+        targetSdk 35
+        versionCode Integer.parseInt((project.findProperty('versionCode') ?: '1').toString())
+        versionName((project.findProperty('versionName') ?: '1.0').toString())
+    }
+
+    // One fixed key so every new version installs over the old one and keeps the records.
+    signingConfigs {
+        family {
+            storeFile rootProject.file('keystore/droptime-release.jks')
+            storePassword 'droptime-family'
+            keyAlias 'droptime'
+            keyPassword 'droptime-family'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.family
+        }
+        debug {
+            signingConfig signingConfigs.family
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    sourceSets {
+        main {
+            assets.srcDirs += [bundledWeb.get().asFile]
+        }
+    }
+
+    lint {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+}
+
+def copyWebApp = tasks.register('copyWebApp', Sync) {
+    from(webApp) {
+        exclude 'calendar/**', 'sw.js', '.nojekyll'
+    }
+    into(bundledWeb.map { it.dir('www') })
+}
+
+tasks.named('preBuild') {
+    dependsOn copyWebApp
+}

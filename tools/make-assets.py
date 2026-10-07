@@ -1,0 +1,124 @@
+"""Generates the alarm chime and the app icons.
+
+    python3 tools/make-assets.py
+
+Writes docs/assets/chime.wav, docs/icons/*.png and the Android copies.
+GitHub Actions runs this on every build (pip install pillow first).
+"""
+import math
+import os
+import shutil
+import struct
+import wave
+
+from PIL import Image, ImageDraw
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DOCS = os.path.join(ROOT, "docs")
+ANDROID_RES = os.path.join(ROOT, "android", "app", "src", "main", "res")
+
+TEAL = (11, 122, 112)
+TEAL_2 = (19, 163, 148)
+
+
+def chime(path):
+    """A clear three-note bell (E5, G#5, B5) played twice, ~2.6 s, loops well."""
+    rate = 22050
+    length = 2.6
+    n = int(rate * length)
+    buf = [0.0] * n
+    notes = [(0.00, 659.25), (0.18, 830.61), (0.36, 987.77), (1.20, 659.25), (1.38, 830.61), (1.56, 987.77)]
+    for start, freq in notes:
+        s0 = int(start * rate)
+        for i in range(s0, n):
+            t = (i - s0) / rate
+            env = math.exp(-t * 3.2) * min(1.0, t / 0.004)
+            if env < 1e-4:
+                break
+            v = (math.sin(2 * math.pi * freq * t)
+                 + 0.45 * math.sin(2 * math.pi * freq * 2.0 * t) * math.exp(-t * 2)
+                 + 0.20 * math.sin(2 * math.pi * freq * 3.01 * t) * math.exp(-t * 4))
+            buf[i] += v * env
+    peak = max(abs(x) for x in buf) or 1.0
+    gain = 0.89 / peak  # about -1 dBFS
+    # Fade the very end so the loop has no click.
+    fade = int(0.05 * rate)
+    for i in range(fade):
+        buf[n - 1 - i] *= i / fade
+    with wave.open(path, "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(rate)
+        w.writeframes(b"".join(struct.pack("<h", int(max(-1, min(1, x * gain)) * 32767)) for x in buf))
+
+
+def drop_polygon(cx, cy, r, steps=180):
+    """Water drop: a circle at the bottom with a point on top."""
+    d = 2.1 * r
+    phi = math.pi / 2 - math.asin(r / d)  # tangent angle measured from straight up
+    pts = [(cx, cy - d)]
+    for k in range(steps + 1):
+        a = phi + (2 * math.pi - 2 * phi) * k / steps
+        pts.append((cx + r * math.sin(a), cy - r * math.cos(a)))
+    return pts
+
+
+def icon(size, rounded=True, scale_content=1.0):
+    ss = 4
+    S = size * ss
+    img = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    # Diagonal gradient background.
+    grad = Image.new("RGBA", (S, S))
+    px = grad.load()
+    for y in range(S):
+        for x in range(S):
+            t = (x + y) / (2 * S)
+            px[x, y] = tuple(int(TEAL[i] + (TEAL_2[i] - TEAL[i]) * t) for i in range(3)) + (255,)
+    mask = Image.new("L", (S, S), 0)
+    md = ImageDraw.Draw(mask)
+    if rounded:
+        md.rounded_rectangle([0, 0, S - 1, S - 1], radius=int(S * 0.22), fill=255)
+    else:
+        md.rectangle([0, 0, S - 1, S - 1], fill=255)
+    img.paste(grad, (0, 0), mask)
+
+    d = ImageDraw.Draw(img)
+    r = S * 0.19 * scale_content
+    cx, cy = S / 2, S * 0.56 + (1 - scale_content) * S * 0.02
+    d.polygon(drop_polygon(cx, cy, r), fill=(255, 255, 255, 255))
+    # Small clock inside the drop.
+    cr = r * 0.56
+    w = max(2, int(r * 0.13))
+    d.ellipse([cx - cr, cy - cr, cx + cr, cy + cr], outline=TEAL + (255,), width=w)
+    d.line([cx, cy, cx, cy - cr * 0.62], fill=TEAL + (255,), width=w)
+    d.line([cx, cy, cx + cr * 0.5, cy + cr * 0.28], fill=TEAL + (255,), width=w)
+    d.ellipse([cx - w * 0.7, cy - w * 0.7, cx + w * 0.7, cy + w * 0.7], fill=TEAL + (255,))
+    return img.resize((size, size), Image.LANCZOS)
+
+
+def main():
+    os.makedirs(os.path.join(DOCS, "assets"), exist_ok=True)
+    os.makedirs(os.path.join(DOCS, "icons"), exist_ok=True)
+    wav = os.path.join(DOCS, "assets", "chime.wav")
+    chime(wav)
+
+    icon(192).save(os.path.join(DOCS, "icons", "icon-192.png"))
+    icon(512).save(os.path.join(DOCS, "icons", "icon-512.png"))
+    icon(512, rounded=False, scale_content=0.82).save(os.path.join(DOCS, "icons", "maskable-512.png"))
+    icon(180, rounded=False).save(os.path.join(DOCS, "icons", "apple-touch-icon.png"))
+    icon(64).save(os.path.join(DOCS, "icons", "favicon-64.png"))
+
+    raw = os.path.join(ANDROID_RES, "raw")
+    os.makedirs(raw, exist_ok=True)
+    shutil.copy(wav, os.path.join(raw, "chime.wav"))
+    for folder, px in [("mipmap-mdpi", 48), ("mipmap-hdpi", 72), ("mipmap-xhdpi", 96), ("mipmap-xxhdpi", 144), ("mipmap-xxxhdpi", 192)]:
+        out = os.path.join(ANDROID_RES, folder)
+        os.makedirs(out, exist_ok=True)
+        img = icon(px)
+        img.save(os.path.join(out, "ic_launcher.png"))
+        img.save(os.path.join(out, "ic_launcher_round.png"))
+    print("assets written")
+
+
+if __name__ == "__main__":
+    main()

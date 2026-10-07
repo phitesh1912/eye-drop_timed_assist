@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Notification icon: a drop (white on transparent). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M12,2.6C11.65,2.6 11.34,2.78 11.15,3.07C9.5,5.6 5.5,11.1 5.5,14.6A6.5,6.5 0,0 0,18.5 14.6C18.5,11.1 14.5,5.6 12.85,3.07A1,1 0,0 0,12 2.6Z" />
+</vector>
