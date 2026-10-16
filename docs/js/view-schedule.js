@@ -1,7 +1,7 @@
 // Schedule: the whole plan from the hospital sheet, day by day and drop by drop.
 
 import {
-  COURSE, ymd, addDays, fmtDate, fmtTime, dayNumber, courseBounds, scheduleChanges, timesPerDayText,
+  ymd, addDays, fmtDate, fmtTime, dayNumber, courseBounds, scheduleChanges, timesPerDayText, eyeSentence, dropTag,
   slotTimes, medStart, medEnd, originalEnd, label, mealFor,
 } from './schedule.js';
 import { esc, icon, badge, medVars } from './ui.js';
@@ -46,9 +46,9 @@ export function renderSchedule(state, c, ui) {
       <div class="card tips">
         <ol>
           <li><b>Wash hands</b> with soap first.</li>
-          <li>Check the <b>number on the box</b> matches the app. <b>${COURSE.eye} eye only.</b></li>
-          <li><b>Shake</b> ① Pred Forte and ③ Micronac PF before use.</li>
-          <li>Tilt the head back, gently pull the lower eyelid down, put <b>1 drop</b>.</li>
+          <li>Check the <b>number on the box</b> matches the app. <b>${esc(eyeSentence())}</b></li>
+          ${shakeTip(c.meds)}
+          <li>Tilt the head back, gently pull the lower eyelid down, put <b>${esc(dropTag())}</b>.</li>
           <li><b>Don’t touch</b> the eye or eyelashes with the bottle tip.</li>
           <li>Close the eye gently for about a minute. <b>Don’t rub or press</b> it.</li>
           <li>Wait <b>${c.gapMin} minutes</b> before a different drop. The app times this for you.</li>
@@ -64,6 +64,14 @@ export function renderSchedule(state, c, ui) {
         ${icon('phone')}<div><b>Call the hospital</b><span>${esc(state.settings.hospitalPhone)}</span></div>${icon('chevron', 'chev')}
       </a>
     </section>`;
+}
+
+function shakeTip(meds) {
+  const shake = meds.filter((m) => m.shake && m.phases.length);
+  if (!shake.length) return '';
+  const names = shake.map((m) => esc(label(m)));
+  const list = names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names.at(-1)}` : names[0];
+  return `<li><b>Shake</b> ${list} before use.</li>`;
 }
 
 function medCard(m, today) {
@@ -82,7 +90,7 @@ function medCard(m, today) {
       <div><b>${esc(m.name)}</b><span>${esc(m.generic)}</span></div>
       <span class="pill ${active ? 'pill-now' : 'pill-muted'}">${esc(status)}</span>
     </div>
-    <div class="med-box"><i class="swatch"></i>${esc(m.box)}${m.shake ? ` · <b>shake well</b>` : ''}${m.kind === 'tablet' ? ` · ${esc(mealFor(m.phases[0]?.times[0] || '09:00'))}` : ''}</div>
+    <div class="med-box"><i class="swatch"></i>${esc(m.box)}${m.shake ? ` · <b>shake well</b>` : ''}${m.kind === 'tablet' ? ` · ${esc(mealFor(m.phases[0]?.times[0] || '09:00', m))}` : ''}</div>
     ${phases}
     ${changed ? '<div class="med-note">End date changed in Settings</div>' : ''}
   </article>`;
@@ -95,7 +103,7 @@ function outsideReminders(c, today, first) {
   return `<section class="section">
     <h2 class="section-title">${icon('bell')}Reminders when the app is closed</h2>
     <div class="card action-list">
-      <a class="action" href="calendar/drop-time.ics" target="_blank" rel="noopener">${icon('calendar')}<div><b>Add all drop times to the phone calendar</b><span>On iPhone tap “Add All”. The calendar then alerts at each time, even when this app is closed (turn the silent switch off).</span></div></a>
+      <a class="action" href="calendar/drop-time.ics" target="_blank" rel="noopener" data-mark="calendarAdded">${icon('calendar')}<div><b>Add all drop times to the phone calendar</b><span>On iPhone tap “Add All”. The calendar then alerts at each time, even when this app is closed (turn the silent switch off).</span></div></a>
       <div class="action is-static">${icon('clock')}<div><b>Or set Clock alarms for ${esc(fmtDate(ref))}</b><span>${times.map(fmtTime).join(' · ')}</span></div></div>
     </div>
   </section>`;

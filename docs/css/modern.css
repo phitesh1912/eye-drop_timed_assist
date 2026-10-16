@@ -1,0 +1,290 @@
+/* Drop Time+: the modern look, layered on app.css.
+   Dark and low-glare on purpose: eyes are light-sensitive after laser surgery. */
+
+html.theme-modern {
+  color-scheme: dark;
+  --bg: #070B14;
+  --surface: rgba(255, 255, 255, .055);
+  --surface-2: rgba(255, 255, 255, .075);
+  --surface-solid: #111827;
+  --ink: #F1F5FB;
+  --ink-2: #C9D2E0;
+  --muted: #8C98AC;
+  --line: rgba(255, 255, 255, .08);
+  --brand: #5EEAD4;
+  --brand-2: #818CF8;
+  --brand-soft: rgba(94, 234, 212, .12);
+  --now: #FB7185;
+  --now-soft: rgba(251, 113, 133, .14);
+  --wait: #FBBF24;
+  --wait-soft: rgba(251, 191, 36, .13);
+  --ok: #34D399;
+  --ok-soft: rgba(52, 211, 153, .14);
+  --miss: #F87171;
+  --miss-soft: rgba(248, 113, 113, .14);
+  --shadow-1: 0 1px 0 rgba(255, 255, 255, .04) inset, 0 12px 32px rgba(0, 0, 0, .35);
+  --shadow-2: 0 1px 0 rgba(255, 255, 255, .06) inset, 0 22px 50px rgba(0, 0, 0, .5);
+  --glow: 0 0 0 1px rgba(94, 234, 212, .35), 0 10px 40px rgba(94, 234, 212, .18);
+}
+
+.theme-modern body {
+  background:
+    radial-gradient(700px 420px at 0% -10%, rgba(45, 212, 191, .16), transparent 70%),
+    radial-gradient(700px 420px at 100% -5%, rgba(129, 140, 248, .18), transparent 70%),
+    var(--bg);
+  background-attachment: fixed;
+  font-size: 17.5px;
+}
+
+/* ------------------------------------------------------------ glass surfaces */
+
+.theme-modern .card,
+.theme-modern .stat,
+.theme-modern .day-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-1);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+  border-radius: 24px;
+}
+
+.theme-modern .topbar {
+  background: linear-gradient(180deg, rgba(7, 11, 20, .92), rgba(7, 11, 20, .55));
+}
+.theme-modern .brand { font-size: 21px; letter-spacing: -.02em; }
+.theme-modern .brand span {
+  background: linear-gradient(90deg, #5EEAD4, #A5B4FC);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.theme-modern .brand .ic { color: #5EEAD4; filter: drop-shadow(0 0 8px rgba(94, 234, 212, .55)); }
+
+.theme-modern .section-title {
+  font-size: 12.5px; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); font-weight: 800;
+}
+.theme-modern .section-title .ic { width: 16px; height: 16px; }
+.theme-modern .t-now { color: var(--now); }
+
+/* ------------------------------------------------------------ hero */
+
+.theme-modern .hero {
+  padding: 20px;
+  border: 1px solid transparent;
+  background:
+    linear-gradient(160deg, rgba(17, 24, 39, .92), rgba(17, 24, 39, .78)) padding-box,
+    linear-gradient(135deg, rgba(94, 234, 212, .55), rgba(129, 140, 248, .45), rgba(255, 255, 255, .06)) border-box;
+}
+.theme-modern .hero-ring { width: 104px; height: 104px; }
+.theme-modern .hero-ring .ring { width: 104px; height: 104px; }
+.theme-modern .ring-bg { stroke: rgba(255, 255, 255, .08); }
+.theme-modern .ring-fg { stroke: var(--brand); filter: drop-shadow(0 0 6px rgba(94, 234, 212, .6)); }
+.theme-modern .ring.is-full .ring-fg { stroke: var(--ok); }
+.theme-modern .hero-count b { font-size: 34px; letter-spacing: -.03em; }
+.theme-modern .hero-label { text-transform: uppercase; letter-spacing: .1em; font-size: 11.5px; font-weight: 800; }
+.theme-modern .hero-next { font-size: 19px; }
+.theme-modern .hero-rel { font-size: 16px; color: var(--brand); }
+.theme-modern .hero-vit {
+  background: rgba(255, 255, 255, .06); border: 1px solid var(--line);
+  max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ------------------------------------------------------------ timeline strip */
+
+.tl-wrap { margin: 14px -16px 0; }
+.tl-strip {
+  position: relative;
+  display: flex; gap: 8px; overflow-x: auto; padding: 4px 16px 10px;
+  scroll-snap-type: x proximity; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+}
+.tl-strip::-webkit-scrollbar { display: none; }
+.tl-chip {
+  flex: none; scroll-snap-align: center; min-width: 66px;
+  display: grid; justify-items: center; gap: 6px; padding: 10px 8px 8px;
+  border-radius: 18px; background: var(--surface); border: 1px solid var(--line);
+  color: var(--muted); position: relative;
+}
+.tl-time { font-weight: 800; font-size: 15px; color: var(--ink-2); font-variant-numeric: tabular-nums; line-height: 1; }
+.tl-time small { display: block; font-size: 10px; letter-spacing: .08em; color: var(--muted); margin-top: 2px; text-align: center; }
+.tl-badges { display: flex; gap: 3px; }
+.tl-badges .num.xs { --size: 20px; font-size: 11px; }
+.tl-mark { height: 16px; }
+.tl-mark .ic { width: 16px; height: 16px; }
+.tl-chip.st-done { opacity: .55; }
+.tl-chip.st-done .tl-mark { color: var(--ok); }
+.tl-chip.st-missed { border-color: rgba(248, 113, 113, .35); }
+.tl-chip.st-missed .tl-mark { color: var(--miss); }
+.tl-chip.st-now {
+  border-color: transparent;
+  background:
+    linear-gradient(var(--surface-solid), var(--surface-solid)) padding-box,
+    linear-gradient(135deg, #FB7185, #F59E0B) border-box;
+  box-shadow: 0 8px 26px rgba(251, 113, 133, .25);
+}
+.tl-chip.st-now .tl-time { color: #FFE4E6; }
+.tl-chip.is-current:not(.st-now) {
+  border-color: rgba(94, 234, 212, .45);
+  box-shadow: 0 8px 26px rgba(94, 234, 212, .12);
+}
+
+/* ------------------------------------------------------------ dose cards */
+
+.theme-modern .dose-card {
+  border-radius: 28px; padding: 20px 18px 18px;
+  background:
+    radial-gradient(120% 70% at 0% 0%, var(--c-soft), transparent 60%),
+    linear-gradient(180deg, rgba(17, 24, 39, .96), rgba(13, 19, 32, .96));
+  border: 1px solid var(--c-line);
+  box-shadow: var(--shadow-2);
+}
+.theme-modern .dose-card::before {
+  height: 3px; left: 24px; right: 24px; border-radius: 0 0 3px 3px;
+  background: linear-gradient(90deg, transparent, var(--c), transparent);
+}
+.theme-modern .dose-card.is-due { border-color: var(--c); }
+.theme-modern .dose-name { font-size: 25px; letter-spacing: -.02em; }
+.theme-modern .dose-time b { font-size: 27px; letter-spacing: -.02em; }
+.theme-modern .num { box-shadow: 0 0 0 4px var(--c-soft), 0 10px 26px var(--c-line); }
+.theme-modern .num.xs { box-shadow: none; }
+.theme-modern .tag { background: rgba(255, 255, 255, .07); color: var(--ink-2); border: 1px solid var(--line); }
+.theme-modern .tag-eye { background: rgba(251, 113, 133, .14); color: #FECDD3; border-color: rgba(251, 113, 133, .3); }
+.theme-modern .tag-shake { background: var(--c-soft); color: var(--ink); border-color: var(--c-line); }
+.theme-modern .gap-box { background: var(--wait-soft); border: 1px solid rgba(251, 191, 36, .25); }
+.theme-modern .queued-card { background: rgba(255, 255, 255, .03); border-color: var(--c-line); }
+
+/* ------------------------------------------------------------ buttons */
+
+.theme-modern .btn { border-radius: 18px; min-height: 58px; }
+.theme-modern .btn-done {
+  background: linear-gradient(135deg, #5EEAD4, #34D399);
+  color: #04221A; box-shadow: 0 12px 30px rgba(52, 211, 153, .3);
+}
+.theme-modern .btn-done:active { background: linear-gradient(135deg, #2DD4BF, #10B981); }
+.theme-modern .btn-soft { background: rgba(255, 255, 255, .07); color: var(--ink); border: 1px solid var(--line); }
+.theme-modern .btn-quiet { color: var(--muted); }
+.theme-modern .btn-danger { background: var(--miss-soft); color: #FECACA; border: 1px solid rgba(248, 113, 113, .3); }
+.theme-modern .btn-small { background: rgba(94, 234, 212, .12); color: var(--brand); border: 1px solid rgba(94, 234, 212, .25); }
+.theme-modern .icon-btn { background: rgba(255, 255, 255, .07); color: var(--ink); }
+.theme-modern .link-btn { color: var(--brand); }
+
+/* ------------------------------------------------------------ lists */
+
+.theme-modern .up-row, .theme-modern .row, .theme-modern .rec-line, .theme-modern .action,
+.theme-modern .check, .theme-modern .tl-item, .theme-modern .phase, .theme-modern .end-row { border-color: var(--line); }
+.theme-modern .up-row.is-next {
+  background: linear-gradient(90deg, rgba(94, 234, 212, .12), rgba(94, 234, 212, 0) 75%);
+  box-shadow: inset 3px 0 0 var(--brand);
+}
+.theme-modern .med-chip { color: var(--ink); background: var(--c-soft); border: 1px solid var(--c-line); }
+.theme-modern .med-chip.plain { background: rgba(255, 255, 255, .07); border-color: var(--line); }
+.theme-modern .pill-ok { background: var(--ok-soft); color: #A7F3D0; }
+.theme-modern .pill-late { background: var(--wait-soft); color: #FDE68A; }
+.theme-modern .pill-miss { background: var(--miss-soft); color: #FECACA; }
+.theme-modern .pill-now { background: var(--brand-soft); color: var(--brand); }
+.theme-modern .pill-skip, .theme-modern .pill-muted { background: rgba(255, 255, 255, .07); color: var(--muted); }
+.theme-modern .row-mark.ok { background: var(--ok-soft); color: var(--ok); }
+.theme-modern .row-mark.miss { background: var(--miss-soft); color: var(--miss); }
+.theme-modern .row-mark.skip { background: rgba(255, 255, 255, .07); }
+.theme-modern .dot-upcoming { border-color: rgba(255, 255, 255, .18); }
+.theme-modern .dot-skipped { background: rgba(255, 255, 255, .22); }
+.theme-modern .stat b {
+  font-size: 24px;
+  background: linear-gradient(180deg, #FFFFFF, #A5B4FC);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.theme-modern .stat.is-miss b { background: none; color: var(--miss); }
+
+/* ------------------------------------------------------------ banners & cards */
+
+.theme-modern .banner { background: var(--surface); border: 1px solid var(--line); }
+.theme-modern .banner b { color: var(--ink); }
+.theme-modern .banner span { color: var(--ink-2); }
+.theme-modern .banner-brand { border-color: rgba(94, 234, 212, .3); color: var(--brand); }
+.theme-modern .banner-wait { border-color: rgba(251, 191, 36, .3); color: var(--wait); }
+.theme-modern .banner-warn { border-color: rgba(248, 113, 113, .35); color: var(--miss); }
+.theme-modern .change-banner {
+  background: linear-gradient(135deg, rgba(251, 191, 36, .14), rgba(251, 113, 133, .08));
+  border: 1px solid rgba(251, 191, 36, .3);
+}
+.theme-modern .change-kicker { color: #FDE68A; }
+.theme-modern .start-art, .theme-modern .onboard-art, .theme-modern .about-mark {
+  background: linear-gradient(135deg, #2DD4BF, #6366F1); color: #fff;
+  box-shadow: 0 14px 36px rgba(99, 102, 241, .35);
+}
+.theme-modern .call-card.brand { background: linear-gradient(135deg, #0F766E, #4338CA); }
+.theme-modern .med-card { border-left: 4px solid var(--c); }
+.theme-modern .tips ol li::marker { color: var(--brand); font-weight: 800; }
+
+/* ------------------------------------------------------------ forms & settings */
+
+.theme-modern .field input, .theme-modern .add-row input, .theme-modern .end-input input, .theme-modern .when-label input {
+  background: rgba(255, 255, 255, .05); border-color: rgba(255, 255, 255, .12); color: var(--ink);
+}
+.theme-modern input:focus { outline-color: rgba(94, 234, 212, .25); border-color: var(--brand); }
+.theme-modern input[type="date"]::-webkit-calendar-picker-indicator,
+.theme-modern input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(1) opacity(.7); }
+.theme-modern .chip { background: rgba(255, 255, 255, .05); border-color: var(--line); color: var(--ink-2); }
+.theme-modern .chip.is-on { background: var(--brand); border-color: var(--brand); color: #04221A; }
+.theme-modern .person { background: rgba(94, 234, 212, .12); color: var(--ink); }
+.theme-modern .person button { background: rgba(255, 255, 255, .08); color: var(--brand); }
+.theme-modern .switch { background: rgba(255, 255, 255, .16); }
+.theme-modern .switch:checked { background: var(--ok); }
+.theme-modern .is-ok .check-mark { background: var(--ok-soft); color: var(--ok); }
+.theme-modern .is-bad .check-mark { background: var(--wait-soft); color: var(--wait); }
+
+/* ------------------------------------------------------------ floating tab bar */
+
+.theme-modern .app { padding-bottom: calc(120px + env(safe-area-inset-bottom)); }
+.theme-modern .tabbar {
+  left: 12px; right: 12px; bottom: calc(10px + env(safe-area-inset-bottom));
+  max-width: 536px; padding: 6px; border-radius: 26px;
+  background: rgba(13, 19, 32, .78);
+  -webkit-backdrop-filter: blur(22px) saturate(140%); backdrop-filter: blur(22px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, .09);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, .55);
+}
+.theme-modern .tab { border-radius: 20px; padding: 8px 0 6px; color: var(--muted); }
+.theme-modern .tab.is-on { color: var(--brand); background: rgba(94, 234, 212, .1); }
+.theme-modern .tab-dot { border-color: #0D1320; }
+
+/* ------------------------------------------------------------ sheets, toast */
+
+.theme-modern .sheet-backdrop { background: rgba(0, 0, 0, .6); }
+.theme-modern .sheet {
+  background: linear-gradient(180deg, #131B2E, #0D1322);
+  border-top: 1px solid rgba(255, 255, 255, .1);
+  box-shadow: 0 -20px 60px rgba(0, 0, 0, .6);
+}
+.theme-modern .sheet-grip { background: rgba(255, 255, 255, .2); }
+.theme-modern .who { background: rgba(255, 255, 255, .05); border-color: var(--line); color: var(--ink); }
+.theme-modern .who.is-last { border-color: var(--ok); background: var(--ok-soft); }
+.theme-modern .who-avatar { background: linear-gradient(135deg, #2DD4BF, #6366F1); }
+.theme-modern .step-n { background: linear-gradient(135deg, #2DD4BF, #6366F1); }
+.theme-modern #toast-root { bottom: calc(96px + env(safe-area-inset-bottom)); }
+.theme-modern .toast { background: #F1F5FB; color: #0B1220; }
+.theme-modern .toast button { background: rgba(11, 18, 32, .08); color: #0F766E; }
+
+/* ------------------------------------------------------------ alarm screen */
+
+.theme-modern .alarm {
+  background:
+    radial-gradient(90% 60% at 50% 28%, var(--c) 0%, rgba(7, 11, 20, 0) 70%),
+    radial-gradient(60% 40% at 50% 100%, rgba(129, 140, 248, .25), transparent 70%),
+    #070B14;
+}
+.theme-modern .alarm-kicker { background: rgba(255, 255, 255, .1); border: 1px solid rgba(255, 255, 255, .16); }
+.theme-modern .alarm-clock { font-size: 60px; letter-spacing: -.04em; }
+.theme-modern .alarm .num { box-shadow: 0 0 0 10px rgba(255, 255, 255, .08), 0 20px 60px var(--c); }
+.theme-modern .alarm-tags span { background: rgba(255, 255, 255, .1); border: 1px solid rgba(255, 255, 255, .14); }
+.theme-modern .alarm-tags .is-eye { background: #FFE4E6; color: #9F1239; }
+.theme-modern .alarm-then { background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .12); }
+.theme-modern .btn-alarm-stop { background: #F8FAFC; color: #0B1220; }
+.theme-modern .btn-alarm-snooze { background: rgba(255, 255, 255, .1); border: 1px solid rgba(255, 255, 255, .16); }
+
+@media (min-width: 600px) {
+  .theme-modern body {
+    background:
+      radial-gradient(900px 500px at 10% -10%, rgba(45, 212, 191, .16), transparent 70%),
+      radial-gradient(900px 500px at 90% -5%, rgba(129, 140, 248, .18), transparent 70%),
+      var(--bg);
+  }
+}

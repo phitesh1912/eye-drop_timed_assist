@@ -1,7 +1,7 @@
 // Pop-up sheets (who put it, confirm, details, install help, first-run setup)
 // and the full-screen alarm.
 
-import { COURSE, fmtTime, fmtClock, fmtDate, hhmmOf, label, mealFor, parseDoseId, MEDS } from './schedule.js';
+import { REGIMEN, fmtTime, fmtClock, fmtDate, hhmmOf, label, mealFor, parseDoseId, MEDS, eyeTag, dropTag } from './schedule.js';
 import { esc, icon, badge, medVars, medChip } from './ui.js';
 import { isAndroidApp, isIOS, isStandalone } from './alarm.js';
 
@@ -89,20 +89,23 @@ function doseSheet(sheet, state, c) {
 
 function installSheet() {
   return sheetWrap(`
-    <h3 id="sheet-title">Add Drop Time to the Home Screen</h3>
+    <h3 id="sheet-title">Add ${esc(REGIMEN.title)} to the Home Screen</h3>
     <p class="sheet-sub">Then always open it from the new icon. On iPhone this keeps the records safe.</p>
     <ol class="steps">
       <li><span class="step-n">1</span><div>Open this page in <b>Safari</b>. Tap the <b>Share</b> button ${icon('share')} at the bottom (or top) of the screen.</div></li>
       <li><span class="step-n">2</span><div>Scroll down and tap <b>Add to Home Screen</b>.</div></li>
-      <li><span class="step-n">3</span><div>Tap <b>Add</b>. Open <b>Drop Time</b> from the Home Screen from now on.</div></li>
+      <li><span class="step-n">3</span><div>Tap <b>Add</b>. Open <b>${esc(REGIMEN.title)}</b> from the Home Screen from now on.</div></li>
     </ol>
     <p class="muted small">Start using it from the Home Screen icon. Ticks made in the Safari tab stay in the Safari tab.</p>
     <button class="btn btn-done wide" data-act="sheet-close">Got it</button>`);
 }
 
-const NAME_IDEAS = ['Grandma', 'Ammamma', 'Nanamma', 'Nani', 'Dadi', 'Amma'];
+export function calendarButton(cls) {
+  return `<a class="${cls}" href="calendar/drop-time.ics" target="_blank" rel="noopener" data-mark="calendarAdded">${icon('calendar')} Add all drop times to the iPhone Calendar</a>`;
+}
 
 function onboardSheet(sheet, state) {
+  const ideas = REGIMEN.nameIdeas || [];
   const s = state.settings;
   if (sheet.step === 2) {
     let alarmPart;
@@ -110,12 +113,13 @@ function onboardSheet(sheet, state) {
       alarmPart = `<p>The phone will ring like an alarm clock at every drop time, even when the app is closed or the phone is locked.</p>
         <button class="btn btn-done wide" data-act="onboard-allow">${icon('bell')} Allow alarms</button>
         <p class="muted small">If Android asks, choose <b>Allow</b>. You can check everything later in Settings.</p>`;
-    } else if (isIOS && !isStandalone) {
-      alarmPart = `<p><b>First, add it to the Home Screen.</b> Tap Share ${icon('share')} then <b>Add to Home Screen</b>, and open Drop Time from the new icon.</p>
-        <p class="muted small">On iPhone the alarm only rings while the app is open on screen. For backup reminders, add the drop times to the iPhone Calendar from the Schedule tab.</p>
-        <button class="btn btn-soft wide" data-act="test-sound">${icon('volume')} Test the alarm sound</button>`;
+    } else if (isIOS) {
+      alarmPart = `${isStandalone ? '' : `<p><b>1. Add it to the Home Screen.</b> Tap Share ${icon('share')} then <b>Add to Home Screen</b>, and open ${esc(REGIMEN.title)} from the new icon.</p>`}
+        <p><b>${isStandalone ? '' : '2. '}Add every drop time to the iPhone Calendar.</b> The app can only ring while it’s open on screen. The Calendar alerts at every drop time even when it’s closed (keep the silent switch off).</p>
+        ${calendarButton('btn btn-soft wide')}
+        <button class="btn btn-quiet wide" data-act="test-sound">${icon('volume')} Test the alarm sound</button>`;
     } else {
-      alarmPart = `<p>The alarm rings <b>while this app is open</b>. Keep it open on a phone or tablet near ${esc(s.patientName)}.</p>
+      alarmPart = `<p>The alarm rings <b>while this app is open</b>. Keep it open on a phone or tablet near ${esc(s.patientName || 'you')}.</p>
         <button class="btn btn-soft wide" data-act="test-sound">${icon('volume')} Test the alarm sound</button>`;
     }
     return sheetWrap(`
@@ -126,19 +130,19 @@ function onboardSheet(sheet, state) {
   }
   return sheetWrap(`
     <div class="onboard-art">${icon('drop')}</div>
-    <h3 id="sheet-title">Welcome to Drop Time</h3>
-    <p class="sheet-sub">Eye drops after cataract surgery, on time, with a record of every drop.</p>
-    <label class="field"><span>Who are the drops for?</span>
-      <input type="text" maxlength="30" value="${esc(s.patientName)}" data-change="patientName" autocomplete="off">
+    <h3 id="sheet-title">Welcome to ${esc(REGIMEN.title)}</h3>
+    <p class="sheet-sub">${REGIMEN.ui === 'modern' ? 'Every eye drop after laser eye surgery, on time, with a record of each one.' : 'Eye drops after cataract surgery, on time, with a record of every drop.'}</p>
+    <label class="field"><span>Whose eye drops are these?</span>
+      <input type="text" maxlength="30" value="${esc(s.patientName)}" placeholder="Name" data-change="patientName" autocomplete="off">
     </label>
-    <div class="chip-row">${NAME_IDEAS.map((n) => `<button class="chip ${n === s.patientName ? 'is-on' : ''}" data-act="set-patient" data-name="${esc(n)}">${esc(n)}</button>`).join('')}</div>
+    ${ideas.length ? `<div class="chip-row">${ideas.map((n) => `<button class="chip ${n === s.patientName ? 'is-on' : ''}" data-act="set-patient" data-name="${esc(n)}">${esc(n)}</button>`).join('')}</div>` : ''}
     <div class="field"><span>Who will put the drops?</span></div>
     ${s.people.length ? `<div class="people">${s.people.map((p) => `<span class="person">${esc(p)}<button data-act="remove-person" data-name="${esc(p)}" aria-label="Remove ${esc(p)}">${icon('x')}</button></span>`).join('')}</div>` : ''}
     <form class="add-row" data-submit="add-person">
-      <input type="text" name="name" maxlength="30" placeholder="Add a name, e.g. Mom" autocomplete="off" enterkeyhint="done">
+      <input type="text" name="name" maxlength="30" placeholder="${REGIMEN.ui === 'modern' ? 'Add a name (yours too)' : 'Add a name, e.g. Mom'}" autocomplete="off" enterkeyhint="done">
       <button class="btn btn-soft" type="submit">${icon('plus')} Add</button>
     </form>
-    <p class="muted small">You can add more names any time.</p>
+    <p class="muted small">${REGIMEN.ui === 'modern' ? 'With just one name, Done ticks straight away.' : 'You can add more names any time.'}</p>
     <button class="btn btn-done wide" data-act="onboard-next">Next</button>`, 'sheet-full');
 }
 
@@ -163,8 +167,8 @@ export function renderAlarm(ring, doses, c, env) {
       <h2 id="alarm-title" class="alarm-name">${esc(head.med.name)}</h2>
       <div class="alarm-box">${esc(head.med.box)}</div>
       <div class="alarm-tags">
-        ${isTablet ? `<span>${icon('pill')} 1 tablet ${esc(mealFor(head.time))}</span>`
-    : `<span class="is-eye">${icon('eye')} ${COURSE.eye} eye</span><span>${icon('drop')} 1 drop</span>${head.med.shake ? `<span>${icon('shake')} Shake well</span>` : ''}`}
+        ${isTablet ? `<span>${icon('pill')} 1 tablet ${esc(mealFor(head.time, head.med))}</span>`
+    : `<span class="is-eye">${icon('eye')} ${esc(eyeTag())}</span><span>${icon('drop')} ${esc(dropTag())}</span>${head.med.shake ? `<span>${icon('shake')} Shake well</span>` : ''}`}
       </div>
       ${rest.length ? `<div class="alarm-then">Then, ${c.gapMin} min later: ${rest.map((d) => esc(label(d.med))).join(', ')}</div>` : ''}
       ${head.status === 'gap' ? `<div class="alarm-then">Wait until ${fmtClock(head.waitUntil)} before putting this drop</div>` : ''}

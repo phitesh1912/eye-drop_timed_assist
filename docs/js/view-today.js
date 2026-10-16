@@ -1,8 +1,9 @@
 // The Today screen: Put now / Coming up / Done.
 
 import {
-  COURSE, MIN, ymd, addDays, fmtDate, fmtTime, fmtClock, dayNumber, courseBounds, dosesForDate,
+  REGIMEN, MIN, ymd, addDays, fmtDate, fmtTime, fmtClock, dayNumber, courseBounds, dosesForDate,
   evaluateDay, scheduleChanges, timesPerDayText, mealFor, label, PAIN_TABLET, NUMERALS, OPEN_STATUSES,
+  eyeTag, dropTag, shortName,
 } from './schedule.js';
 import { esc, icon, badge, medChip, medVars, relText, countdownText, ring, pluralize } from './ui.js';
 
@@ -25,6 +26,7 @@ export function renderToday(state, c, env) {
   const doses = evaluateDay(today, c);
   parts.push(renderChangeBanner(c, today));
   parts.push(renderHero(doses, c, today));
+  if (REGIMEN.ui === 'modern') parts.push(renderTimeline(doses, c));
   parts.push(renderNow(doses, c, env));
   parts.push(renderComingUp(doses, c, today, last));
   parts.push(renderDone(doses, c));
@@ -41,8 +43,18 @@ function renderBanners(state, c, env, today) {
   }
   if (env.showInstall) {
     out.push(`<button class="banner banner-brand" data-act="install-help">
-      ${icon('download')}<div><b>Add Drop Time to your Home Screen</b><span>Needed on iPhone so the records stay saved. Tap for the 3 steps.</span></div>${icon('chevron', 'chev')}
+      ${icon('download')}<div><b>Add ${esc(REGIMEN.title)} to your Home Screen</b><span>Needed on iPhone so the records stay saved. Tap for the 3 steps.</span></div>${icon('chevron', 'chev')}
     </button>`);
+  }
+  if (env.showCalendarTip) {
+    out.push(`<div class="banner banner-brand banner-cal">
+      ${icon('calendar')}<div><b>Get alerts even when the app is closed</b><span>Add every drop time to the iPhone Calendar, then tap “Add All”.</span>
+        <div class="banner-actions">
+          <a class="btn btn-small" href="calendar/drop-time.ics" target="_blank" rel="noopener" data-mark="calendarAdded">${icon('calendar')} Add to Calendar</a>
+          <button class="link-btn" data-act="calendar-later">Not now</button>
+        </div>
+      </div>
+    </div>`);
   }
   if (env.soundLocked) {
     out.push(`<button class="banner banner-wait" data-act="unlock-sound">
@@ -72,12 +84,12 @@ function renderChangeBanner(c, today) {
   const { first } = courseBounds(c.meds);
   const changes = scheduleChanges(c.meds).filter((ch) => ch.date !== first);
   const tomorrow = addDays(today, 1);
-  const hit = changes.find((ch) => ch.date === today) || changes.find((ch) => ch.date === tomorrow);
-  if (!hit) return '';
-  const when = hit.date === today ? 'Today' : 'Tomorrow';
-  return `<section class="change-banner">
-    <div class="change-kicker">${icon('calendar')} ${when} · ${esc(fmtDate(hit.date))}</div>
-    <ul>${hit.items.map((it) => `<li style="${medVars(it.med)}">${badge(it.med, 'xs')}<span>${changeLine(it)}</span></li>`).join('')}</ul>
+  // Today's changes and tomorrow's, so the evening before a switch already shows it.
+  const hits = changes.filter((ch) => ch.date === today || ch.date === tomorrow);
+  if (!hits.length) return '';
+  return `<section class="change-banner">${hits.map((hit) => `
+    <div class="change-kicker">${icon('calendar')} ${hit.date === today ? 'Today' : 'Tomorrow'} · ${esc(fmtDate(hit.date))}</div>
+    <ul>${hit.items.map((it) => `<li style="${medVars(it.med)}">${badge(it.med, 'xs')}<span>${changeLine(it)}</span></li>`).join('')}</ul>`).join('')}
   </section>`;
 }
 
@@ -89,7 +101,7 @@ function renderHero(doses, c, today) {
   const pct = drops.length ? doneDrops / drops.length : 0;
   const open = doses.filter((d) => OPEN.includes(d.status));
   const next = doses.find((d) => d.status === 'upcoming');
-  const vitamin = doses.find((d) => d.med.kind === 'tablet');
+  const tablets = doses.filter((d) => d.med.kind === 'tablet');
 
   let line;
   if (open.length) {
@@ -114,19 +126,63 @@ function renderHero(doses, c, today) {
     <div class="hero-text">
       <div class="hero-label">eye drops done today</div>
       ${line}
-      ${vitamin ? `<div class="hero-vit ${vitamin.status === 'done' ? 'ok' : ''}">${icon(vitamin.status === 'done' ? 'check' : 'pill')} Vitamin ${vitamin.status === 'done' ? 'taken' : fmtTime(vitamin.time)}</div>` : ''}
+      ${tabletChip(tablets)}
     </div>
   </section>`;
+}
+
+function tabletChip(tablets) {
+  if (!tablets.length) return '';
+  if (tablets.length === 1) {
+    const t = tablets[0];
+    const done = t.status === 'done';
+    const name = shortName(t.med);
+    return `<div class="hero-vit ${done ? 'ok' : ''}">${icon(done ? 'check' : 'pill')} ${esc(name)} ${done ? 'taken' : fmtTime(t.time)}</div>`;
+  }
+  const done = tablets.filter((t) => t.status === 'done').length;
+  const all = done === tablets.length;
+  return `<div class="hero-vit ${all ? 'ok' : ''}">${icon(all ? 'check' : 'pill')} Tablets ${done} of ${tablets.length}</div>`;
+}
+
+// A swipeable strip of today's times (modern design only).
+function renderTimeline(doses, c) {
+  const groups = [];
+  for (const d of doses) {
+    const g = groups.find((x) => x.time === d.time);
+    if (g) g.doses.push(d);
+    else groups.push({ time: d.time, at: d.at, doses: [d] });
+  }
+  if (!groups.length) return '';
+  const currentIdx = (() => {
+    const open = groups.findIndex((g) => g.doses.some((d) => OPEN.includes(d.status)));
+    if (open >= 0) return open;
+    const up = groups.findIndex((g) => g.doses.some((d) => d.status === 'upcoming'));
+    return up >= 0 ? up : groups.length - 1;
+  })();
+  const chips = groups.map((g, i) => {
+    const st = g.doses.every((d) => d.status === 'done') ? 'done'
+      : g.doses.some((d) => d.status === 'missed') ? 'missed'
+        : g.doses.some((d) => OPEN.includes(d.status)) ? 'now'
+          : g.doses.every((d) => ['done', 'skipped'].includes(d.status)) ? 'done' : 'later';
+    const [hm, ap] = fmtTime(g.time).split(' ');
+    const mark = st === 'done' ? icon('check') : st === 'missed' ? icon('x') : '';
+    return `<div class="tl-chip st-${st} ${i === currentIdx ? 'is-current' : ''}" data-tl="${i}">
+      <span class="tl-time">${hm}<small>${ap}</small></span>
+      <span class="tl-badges">${g.doses.map((d) => badge(d.med, 'xs')).join('')}</span>
+      <span class="tl-mark">${mark}</span>
+    </div>`;
+  }).join('');
+  return `<section class="tl-wrap" aria-label="Today's times"><div class="tl-strip" data-current="${currentIdx}">${chips}</div></section>`;
 }
 
 // ---------------------------------------------------------------- put now
 
 function tags(d) {
   if (d.med.kind === 'tablet') {
-    return `<span class="tag">${icon('pill')} 1 tablet</span><span class="tag">${esc(mealFor(d.time))}</span>`;
+    return `<span class="tag">${icon('pill')} 1 tablet</span><span class="tag">${esc(mealFor(d.time, d.med))}</span>`;
   }
-  return `<span class="tag tag-eye">${icon('eye')} ${COURSE.eye} eye</span>
-    <span class="tag">${icon('drop')} 1 drop</span>
+  return `<span class="tag tag-eye">${icon('eye')} ${esc(eyeTag())}</span>
+    <span class="tag">${icon('drop')} ${esc(dropTag())}</span>
     ${d.med.shake ? `<span class="tag tag-shake">${icon('shake')} Shake well</span>` : ''}`;
 }
 

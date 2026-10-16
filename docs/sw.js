@@ -1,13 +1,14 @@
 // Offline support: the app keeps working without internet.
 // Network first (so updates arrive), falling back to the saved copy.
 
-const CACHE = 'droptime-v1';
+const CACHE = 'droptime-v2';
 const SHELL = [
   './',
   'index.html',
   'manifest.webmanifest',
   'css/app.css',
   'js/app.js',
+  'js/regimens.js',
   'js/schedule.js',
   'js/store.js',
   'js/alarm.js',
@@ -30,7 +31,8 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      // Only this app's old caches: Drop Time+ (/brother/) keeps its own.
+      .then((keys) => Promise.all(keys.filter((k) => k.startsWith('droptime-v') && k !== CACHE).map((k) => caches.delete(k))))
       .then(() => self.clients.claim()),
   );
 });

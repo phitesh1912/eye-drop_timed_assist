@@ -1,94 +1,42 @@
-// Drop Time: the eye drop course from the hospital sheet, plus the rules that
-// decide what is due, what is waiting and what was missed.
+// Drop Time: the rules that decide what is due, what is waiting and what was
+// missed, for whichever prescription (regimens.js) the app runs.
 //
 // Pure functions only (no DOM, no storage) so this same file runs in the
 // browser, inside the Android app's WebView, and in Node for the tests and
 // the calendar export.
 
-export const MIN = 60 * 1000;
+import { REGIMENS } from './regimens.js';
 
-export const COURSE = {
-  surgeryDate: '2026-10-07', // Day 1 on the sheet
-  startDate: '2026-10-08',   // first day the app tracks (Day 2)
-  eye: 'RIGHT',
-  hospitalPhone: '9581293344',
-};
+export const MIN = 60 * 1000;
 
 export const NUMERALS = ['', '①', '②', '③', '④', '⑤'];
 
-// Numbers 1-5 match the circled numbers written on the sheet and on the boxes.
-// Colours match the coloured bands on the sheet.
-export const MEDS = [
-  {
-    id: 'd1', num: 1, kind: 'drop', order: 1,
-    name: 'Pred Forte', generic: 'Prednisolone acetate',
-    box: 'White box with red end (AbbVie)',
-    color: '#E0603C', shake: true,
-    phases: [
-      { from: '2026-10-14', to: '2026-10-20', times: ['07:00', '11:00', '14:30', '17:00', '21:00'] },
-      // The sheet prints "12:00 AM" here; it means 12 noon.
-      { from: '2026-10-21', to: '2026-10-27', times: ['07:00', '12:00', '17:00', '21:00'] },
-      { from: '2026-10-28', to: '2026-11-03', times: ['07:00', '16:00', '21:00'] },
-      { from: '2026-11-04', to: '2026-11-10', times: ['07:00', '19:00'] },
-      { from: '2026-11-11', to: '2026-11-17', times: ['07:00'] },
-    ],
-  },
-  {
-    id: 'd2', num: 2, kind: 'drop', order: 2,
-    name: 'Moxicip D', generic: 'Moxifloxacin + Dexamethasone',
-    box: 'White box with pink circles (Cipla)',
-    color: '#8E3B2E', shake: false,
-    phases: [
-      // Handwritten on the sheet: "till 13th Oct".
-      { from: '2026-10-08', to: '2026-10-13', times: ['07:00', '10:00', '13:00', '16:00', '19:00', '22:00'] },
-    ],
-  },
-  {
-    id: 'd3', num: 3, kind: 'drop', order: 3,
-    name: 'Micronac PF', generic: 'Nepafenac',
-    box: 'Yellow and purple box',
-    color: '#2F3B58', shake: true,
-    phases: [
-      // 45 days counted from surgery day (7 Oct) -> 20 Nov.
-      { from: '2026-10-08', to: '2026-11-20', times: ['08:00', '14:00', '21:00'] },
-    ],
-  },
-  {
-    id: 'd4', num: 4, kind: 'drop', order: 4,
-    name: 'Dortas', generic: 'Dorzolamide',
-    box: 'White and green box (Intas)',
-    color: '#6D5C99', shake: false,
-    phases: [
-      // 2 weeks counted from surgery day -> 20 Oct.
-      { from: '2026-10-08', to: '2026-10-20', times: ['07:30', '14:30', '21:30'] },
-    ],
-  },
-  {
-    id: 'd5', num: 5, kind: 'drop', order: 5,
-    name: 'Trehalube', generic: 'Sodium hyaluronate (lubricant)',
-    box: 'Dark brown box with a water splash',
-    color: '#4F9A2B', shake: false,
-    phases: [
-      // 1 month counted from surgery day -> 6 Nov.
-      { from: '2026-10-08', to: '2026-11-06', times: ['08:00', '12:00', '16:00', '20:00'] },
-    ],
-  },
-  {
-    id: 't1', num: 0, kind: 'tablet', order: 10,
-    name: 'Vitamin tablet', generic: 'I-FIT-M / Eye 360 / Nusight',
-    box: '1 tablet after a meal',
-    color: '#1F86C7', shake: false,
-    phases: [
-      { from: '2026-10-08', to: '2026-11-06', times: ['09:00'] },
-    ],
-  },
-];
+// The active prescription. `export let` bindings are live, so every module that
+// imports COURSE / MEDS / PAIN_TABLET sees the regimen chosen at start-up.
+export let REGIMEN = REGIMENS.grandma;
+export let COURSE = REGIMEN.course;
+export let MEDS = REGIMEN.meds;
+export let PAIN_TABLET = REGIMEN.painTablet;
 
-// "Only if there is pain" tablet: logged by hand, never an alarm.
-export const PAIN_TABLET = {
-  id: 't2', name: 'Pain tablet', generic: 'Dolo 650 / Ultracet',
-  maxPerDay: 2, color: '#D98E12',
-};
+export function setRegimen(regimen) {
+  REGIMEN = regimen;
+  COURSE = regimen.course;
+  MEDS = regimen.meds;
+  PAIN_TABLET = regimen.painTablet;
+}
+
+// "RIGHT eye" / "Both eyes", for tags and alarm texts.
+export function eyeTag() {
+  return COURSE.eye === 'BOTH' ? 'Both eyes' : `${COURSE.eye} eye`;
+}
+
+export function dropTag() {
+  return COURSE.eye === 'BOTH' ? '1 drop in each eye' : '1 drop';
+}
+
+export function eyeSentence() {
+  return COURSE.eye === 'BOTH' ? 'Both eyes, 1 drop in each.' : `${COURSE.eye} eye only.`;
+}
 
 // ---------------------------------------------------------------- dates
 
@@ -129,7 +77,7 @@ export function daysBetween(a, b) {
   return dayIndex(b) - dayIndex(a);
 }
 
-// Surgery day is Day 1, tomorrow (8 Oct) is Day 2.
+// Surgery day is Day 1.
 export function dayNumber(date) {
   return daysBetween(COURSE.surgeryDate, date) + 1;
 }
@@ -177,17 +125,22 @@ export function label(med) {
   return med.num ? `${NUMERALS[med.num]} ${med.name}` : med.name;
 }
 
+// A short name for small chips: "Chymoral Forte" -> "Chymoral", "Vitamin tablet" -> "Vitamin".
+export function shortName(med) {
+  return med.short || med.name.replace(/ tablet$/i, '');
+}
+
 export function originalEnd(medId) {
   const med = MEDS.find((m) => m.id === medId);
   return med.phases[med.phases.length - 1].to;
 }
 
-// Applies the family's settings (changed end dates, vitamin time) to the sheet.
+// Applies the family's settings (changed end dates, tablet time) to the sheet.
 export function effectiveMeds(settings = {}) {
   const ends = settings.endOverrides || {};
   return MEDS.map((m) => {
     let phases = m.phases.map((p) => ({ ...p, times: [...p.times] }));
-    if (m.id === 't1' && settings.vitaminTime) {
+    if (m.id === REGIMEN.adjustableTime && settings.vitaminTime) {
       phases = phases.map((p) => ({ ...p, times: [settings.vitaminTime] }));
     }
     const end = ends[m.id];
@@ -225,7 +178,8 @@ export function timesPerDayText(n) {
   return `${n} times a day`;
 }
 
-export function mealFor(hhmm) {
+export function mealFor(hhmm, med) {
+  if (med && med.note) return med.note;
   const h = Number(hhmm.split(':')[0]);
   if (h < 11) return 'after breakfast';
   if (h < 17) return 'after lunch';
@@ -282,8 +236,9 @@ export function lastDropAt(records, now) {
 //   gap       due, but wait until `waitUntil` (5 minutes after the last drop)
 //   queued    due, but another drop goes first
 //   upcoming  later
+// Doses before `trackFrom` (when the app was set up) are left out entirely.
 export function evaluateDay(date, ctx) {
-  const { now, meds, records = {}, snoozes = {}, gapMin = 5, onTimeMin = 30 } = ctx;
+  const { now, meds, records = {}, snoozes = {}, gapMin = 5, onTimeMin = 30, trackFrom = 0 } = ctx;
   const doses = dosesForDate(date, meds);
   const dayEnd = atTime(addDays(date, 1), '00:00');
 
@@ -314,6 +269,7 @@ export function evaluateDay(date, ctx) {
       d.by = r.by || '';
       continue;
     }
+    if (d.at < trackFrom) { d.status = 'untracked'; continue; }
     if (now >= d.cutoff) { d.status = 'missed'; continue; }
     if (now < d.at) { d.status = 'upcoming'; continue; }
     d.lateMin = Math.floor((now - d.at) / MIN);
@@ -332,7 +288,7 @@ export function evaluateDay(date, ctx) {
     const s = snoozes[d.id];
     if (s && s > now && ['due', 'gap', 'queued'].includes(d.status)) d.snoozedUntil = s;
   }
-  return doses;
+  return doses.filter((d) => d.status !== 'untracked');
 }
 
 export const OPEN_STATUSES = ['due', 'gap', 'queued'];
@@ -374,13 +330,13 @@ function ringText(doses, slotTime, nag, gapMin) {
     const names = drops.map((d) => label(d.med)).join(`, wait ${gapMin} min, then `);
     return {
       title: nag ? `Reminder: ${when} eye drops not ticked yet` : `Eye drops time · ${when}`,
-      text: `${names}. ${COURSE.eye} eye only.`,
+      text: `${names}. ${eyeSentence()}`,
     };
   }
   const t = doses[0];
   return {
     title: nag ? `Reminder: ${when} ${t.med.name.toLowerCase()} not ticked yet` : `${t.med.name} · ${when}`,
-    text: `1 tablet ${mealFor(slotTime)}.`,
+    text: `1 tablet ${mealFor(slotTime, t.med)}.`,
   };
 }
 
@@ -406,6 +362,7 @@ export function ringPlan(ctx, fromDate, toDate) {
       slots.get(key).push(d);
     }
 
+    const planned = [];
     for (const slot of slots.values()) {
       const live = slot.filter((d) => LIVE.includes(d.status));
       if (!live.length) continue;
@@ -414,10 +371,17 @@ export function ringPlan(ctx, fromDate, toDate) {
       for (const d of live) base = Math.max(base, d.waitUntil || 0, d.snoozedUntil || 0);
       if (isDrop) base = Math.max(base, gapUntil);
       const cutoff = Math.min(...live.map((d) => d.cutoff));
+      planned.push({ live, isDrop, base, cutoff });
+    }
+    planned.sort((a, b) => a.base - b.base);
 
+    planned.forEach(({ live, isDrop, base, cutoff }, idx) => {
+      // The next slot's alarm is the reminder: no repeats within 2 minutes of it.
+      const next = planned.slice(idx + 1).find((p) => p.base > base);
+      const stopAt = next ? next.base - 2 * MIN : Infinity;
       offsets.forEach((off, i) => {
         const at = base + off * MIN;
-        if (at >= cutoff) return;
+        if (at >= cutoff || (i > 0 && at > stopAt)) return;
         // Drops already overdue from earlier slots go first in the message.
         const list = isDrop
           ? [...doses.filter((d) => d.med.kind === 'drop' && OPEN_STATUSES.includes(d.status) && d.at < live[0].at), ...live]
@@ -425,7 +389,7 @@ export function ringPlan(ctx, fromDate, toDate) {
         const { title, text } = ringText(list, live[0].time, i > 0, gapMin);
         out.push({ at, key: `${live[0].id}@${at}`, ids: live.map((d) => d.id), nag: i, title, text });
       });
-    }
+    });
   }
   out.sort((a, b) => a.at - b.at);
   return out;

@@ -1,12 +1,10 @@
 // Settings: names, alarm setup checks, schedule changes, backup.
 
-import { MEDS, fmtDate, fmtClock, originalEnd, medStart } from './schedule.js';
+import { MEDS, REGIMEN, fmtDate, fmtClock, originalEnd, medStart } from './schedule.js';
 import { esc, icon, badge, medVars } from './ui.js';
 import { isAndroidApp, isIOS, isAndroidBrowser, isStandalone, wakeLockSupported, notificationsSupported } from './alarm.js';
 
-export const APK_URL = 'https://github.com/phitesh1912/eye-drop_timed_assist/releases/latest/download/DropTime.apk';
-
-const NAME_IDEAS = ['Grandma', 'Ammamma', 'Nanamma', 'Nani', 'Dadi', 'Amma'];
+const RELEASES = 'https://github.com/phitesh1912/eye-drop_timed_assist/releases/latest/download/';
 
 export function renderSettings(state, c, env) {
   const s = state.settings;
@@ -15,9 +13,9 @@ export function renderSettings(state, c, env) {
       <h2 class="section-title">${icon('heart')}Who the drops are for</h2>
       <div class="card form-card">
         <label class="field"><span>Name shown in the app</span>
-          <input type="text" maxlength="30" value="${esc(s.patientName)}" data-change="patientName" autocomplete="off">
+          <input type="text" maxlength="30" value="${esc(s.patientName)}" placeholder="Name" data-change="patientName" autocomplete="off">
         </label>
-        <div class="chip-row">${NAME_IDEAS.map((n) => `<button class="chip ${n === s.patientName ? 'is-on' : ''}" data-act="set-patient" data-name="${esc(n)}">${esc(n)}</button>`).join('')}</div>
+        ${REGIMEN.nameIdeas.length ? `<div class="chip-row">${REGIMEN.nameIdeas.map((n) => `<button class="chip ${n === s.patientName ? 'is-on' : ''}" data-act="set-patient" data-name="${esc(n)}">${esc(n)}</button>`).join('')}</div>` : ''}
         <p class="muted small">Saved only on this phone, never in the public code.</p>
       </div>
     </section>
@@ -41,9 +39,7 @@ export function renderSettings(state, c, env) {
       <div class="card form-card">
         <p class="muted small">Change when a medicine ends (for example after the follow-up visit). Leave the rest as it is.</p>
         ${MEDS.map((m) => endRow(m, c, s)).join('')}
-        <label class="field inline"><span>${badge(MEDS.find((m) => m.id === 't1'), 'xs')} Vitamin tablet time</span>
-          <input type="time" value="${esc(s.vitaminTime)}" data-change="vitaminTime">
-        </label>
+        ${adjustableRow(s)}
       </div>
     </section>
 
@@ -58,11 +54,19 @@ export function renderSettings(state, c, env) {
     <section class="section">
       <div class="about">
         <div class="about-mark">${icon('drop')}</div>
-        <b>Drop Time</b>
+        <b>${esc(REGIMEN.title)}</b>
         <span>${esc(env.version)} · ${isAndroidApp ? 'Android app' : isStandalone ? 'Home Screen app' : 'web'}</span>
         <span>Follows the hospital’s sheet. Not a substitute for the doctor’s advice.</span>
       </div>
     </section>`;
+}
+
+function adjustableRow(s) {
+  const med = MEDS.find((m) => m.id === REGIMEN.adjustableTime);
+  if (!med) return '';
+  return `<label class="field inline"><span>${badge(med, 'xs')} ${esc(med.name)} time</span>
+    <input type="time" value="${esc(s.vitaminTime)}" data-change="vitaminTime">
+  </label>`;
 }
 
 function endRow(m, c, s) {
@@ -115,7 +119,7 @@ function androidAlarms(env) {
       ${check(n.fullScreen !== false, 'Full-screen alarm', 'Shows the alarm over the lock screen.', 'fullscreen', 'Allow')}
       ${check(n.battery !== false, 'Battery saver won’t block it', 'Lets the alarm ring even after hours of no use.', 'battery', 'Fix')}
       ${check(volOk, 'Alarm volume is on', volOk ? 'Uses the phone’s alarm volume, rings even on silent.' : 'The phone’s alarm volume is at zero.', 'volume', 'Open')}
-      ${tip ? `<div class="check is-tip"><span class="check-mark">${icon('info')}</span><div><b>Tip for this phone</b><span>${esc(tip)}</span></div><button class="btn btn-small" data-act="native-fix" data-which="app">App info</button></div>` : ''}
+      ${tip ? `<div class="check is-tip"><span class="check-mark">${icon('info')}</span><div><b>Tip for this phone</b><span>${esc(tip.replace(/Drop Time/g, REGIMEN.title))}</span></div><button class="btn btn-small" data-act="native-fix" data-which="app">App info</button></div>` : ''}
       <div class="next-alarm">${icon('clock')} Next alarm: <b>${n.nextAlarmAt ? `${esc(fmtDate(localDate(n.nextAlarmAt)))}, ${fmtClock(n.nextAlarmAt)}` : 'none set'}</b></div>
       <div class="btn-row">
         <button class="btn btn-soft" data-act="test-alarm">${icon('bell')} Test alarm in 1 min</button>
@@ -142,7 +146,7 @@ function webAlarms(state, env) {
   if (wakeLockSupported()) {
     rows.push(`<label class="check toggle-row">
       <span class="check-mark">${icon('sun')}</span>
-      <div><b>Keep the screen on</b><span>For a phone or tablet kept near ${esc(s.patientName)} on charge. The alarm only rings while the app is open.</span></div>
+      <div><b>Keep the screen on</b><span>For a phone or tablet kept nearby on charge. The alarm only rings while the app is open.</span></div>
       <input type="checkbox" class="switch" data-change="keepAwake" ${s.keepAwake ? 'checked' : ''}>
     </label>`);
   }
@@ -160,13 +164,14 @@ function webAlarms(state, env) {
       <div><b>Add to Home Screen</b><span>Needed on iPhone so records stay saved. Tap for the steps.</span></div>
     </button>`);
   }
-  const androidCard = isAndroidBrowser ? `<a class="card call-card brand" href="${APK_URL}">
+  const androidCard = isAndroidBrowser ? `<a class="card call-card brand" href="${RELEASES}${REGIMEN.apk}">
       ${icon('android')}<div><b>Get the Android app</b><span>Real alarms that ring even when the app is closed</span></div>${icon('download', 'chev')}
     </a>` : '';
   return `<section class="section">
     <h2 class="section-title">${icon('bell')}Alarms</h2>
     <div class="card checks">${rows.join('')}
-      <p class="muted small">On iPhone a web app can only ring while it is open on screen. For backup reminders, use “Add all drop times to the phone calendar” on the Schedule tab.</p>
+      <p class="muted small">On iPhone a web app can only ring while it is open on screen. The Calendar alerts at every drop time even when the app is closed.</p>
+      ${isIOS ? `<a class="btn btn-soft wide" href="calendar/drop-time.ics" target="_blank" rel="noopener" data-mark="calendarAdded">${icon('calendar')} Add all drop times to the iPhone Calendar</a>` : ''}
     </div>
     ${androidCard}
   </section>`;

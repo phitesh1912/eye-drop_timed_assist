@@ -1,6 +1,7 @@
 // Drop Time: app start-up, the once-a-second clock, alarms and button handling.
 
 import * as S from './schedule.js';
+import { REGIMENS } from './regimens.js';
 import * as store from './store.js';
 import * as alarm from './alarm.js';
 import { esc, icon, countdownText, relText } from './ui.js';
@@ -10,8 +11,13 @@ import { renderSchedule } from './view-schedule.js';
 import { renderSettings } from './view-settings.js';
 import { renderSheet, renderAlarm } from './sheets.js';
 
-const VERSION = '1.0.0';
+const VERSION = '1.1.0';
 const RING_MIN = 10; // an alarm rings for up to 10 minutes, then the next reminder takes over
+const NATIVE_DAYS = 21; // the Android app gets the next three weeks of alarms at a time
+
+// Which prescription this page is for: <html data-regimen="brother">, default Grandma's.
+S.setRegimen(REGIMENS[document.documentElement.dataset.regimen] || REGIMENS.grandma);
+document.title = S.REGIMEN.title;
 
 let state = store.load();
 const ui = { tab: 'today', sheet: null, openDay: null, planDate: null, ring: null, sig: '', soundBlocked: false, pendingRender: false };
@@ -30,6 +36,7 @@ function ctx(now = Date.now()) {
     gapMin: s.gapMin,
     onTimeMin: s.onTimeMin,
     nagMins: s.nagMins,
+    trackFrom: s.trackFrom || 0,
   };
 }
 
@@ -44,7 +51,7 @@ function nativeInfo(maxAge = 4000) {
 
 function alarmProblem(n) {
   if (!n) return '';
-  if (n.notifications === false) return 'Notifications are off for Drop Time.';
+  if (n.notifications === false) return `Notifications are off for ${S.REGIMEN.title}.`;
   if (n.exact === false) return 'Exact alarms are not allowed.';
   if (n.alarmVolume === 0) return 'The phone’s alarm volume is at zero.';
   return '';
@@ -57,6 +64,7 @@ function env() {
     version: `v${VERSION}${n && n.appVersion ? ` · app ${n.appVersion}` : ''}`,
     saveFailed: store.lastSaveFailed(),
     showInstall: alarm.isIOS && !alarm.isStandalone,
+    showCalendarTip: alarm.isIOS && !alarm.isAndroidApp && state.settings.onboarded && !state.settings.calendarAdded,
     soundLocked: !alarm.isAndroidApp && !alarm.soundReady() && state.settings.onboarded,
     soundReady: alarm.soundReady(),
     alarmProblem: alarmProblem(n),
@@ -78,9 +86,9 @@ function renderTopbar(c) {
   const today = S.ymd(c.now);
   const day = S.dayNumber(today);
   $('#topbar').innerHTML = `<div class="topbar-inner">
-    <div class="brand">${icon('drop')}<span>Drop Time</span></div>
+    <div class="brand">${icon('drop')}<span>${esc(S.REGIMEN.title)}</span></div>
     <div class="topbar-right"><b>${esc(S.fmtDate(today))}${day >= 1 ? ` · Day ${day}` : ''}</b>
-      <span>${esc(state.settings.patientName)} · ${S.COURSE.eye} eye</span></div>
+      <span>${esc(state.settings.patientName || 'Eye drops')} · ${esc(S.eyeTag())}</span></div>
   </div>`;
 }
 
@@ -107,6 +115,24 @@ function renderView(c, e) {
   else html = renderToday(state, c, e);
   view.innerHTML = html;
   view.dataset.tab = ui.tab;
+  scrollTimeline();
+}
+
+// Keep the current time in view on the Today strip (only when it moves on).
+function scrollTimeline() {
+  const strip = document.querySelector('.tl-strip');
+  if (!strip) return;
+  const chip = strip.querySelector('.is-current');
+  const key = `${S.ymd(Date.now())}:${strip.dataset.current}`;
+  if (!chip) return;
+  if (ui.tlKey === key && ui.tlScroll != null) {
+    strip.scrollLeft = ui.tlScroll;
+  } else {
+    strip.scrollLeft = Math.max(0, chip.offsetLeft - (strip.clientWidth - chip.offsetWidth) / 2);
+    ui.tlKey = key;
+    ui.tlScroll = strip.scrollLeft;
+  }
+  strip.addEventListener('scroll', () => { ui.tlScroll = strip.scrollLeft; }, { passive: true });
 }
 
 function renderOverlay(c, e) {
@@ -172,7 +198,8 @@ function tick() {
   const now = Date.now();
   const c = ctx(now);
   const today = S.ymd(now);
-  let ring = S.activeRing(c, state.acks, RING_MIN);
+  // No alarms until the first set-up is finished (it decides where tracking starts).
+  let ring = state.settings.onboarded ? S.activeRing(c, state.acks, RING_MIN) : null;
 
   // Alarm already stopped from the Android notification? Then it's silenced here too.
   const n = ring ? nativeInfo(1500) : null;
@@ -227,9 +254,10 @@ function syncNative() {
     alarm.syncNativeAlarms([]);
     return;
   }
+  const until = S.addDays(today, NATIVE_DAYS - 1);
   // The phone books one alarm per time: merge any that land on the same minute.
   const plan = [];
-  for (const r of S.ringPlan(c, today, last)) {
+  for (const r of S.ringPlan(c, today, until < last ? until : last)) {
     if (r.at <= c.now) continue;
     const prev = plan[plan.length - 1];
     if (prev && prev.at === r.at) prev.text = `${prev.text} Also: ${r.title}. ${r.text}`;
@@ -418,7 +446,15 @@ const ACTIONS = {
     window.scrollTo({ top: 0 });
   },
   done(el) {
-    openWho(el.dataset.ids.split(','));
+    const ids = el.dataset.ids.split(',');
+    const people = state.settings.people;
+    // Only one person (e.g. the patient themself): tick straight away, Undo in the toast.
+    if (people.length === 1) {
+      ui.sheet = { type: 'who', ids, purpose: 'done', when: null };
+      finishWho(people[0]);
+      return;
+    }
+    openWho(ids);
   },
   who(el) {
     finishWho(el.dataset.name);
@@ -475,6 +511,12 @@ const ACTIONS = {
     openWho([id], { when: r ? S.hhmmOf(r.at) : null });
   },
   'pain-add'() {
+    const people = state.settings.people;
+    if (people.length === 1) {
+      ui.sheet = { type: 'who', ids: [], purpose: 'pain', when: null };
+      finishWho(people[0]);
+      return;
+    }
     openWho([], { purpose: 'pain' });
   },
   'pain-remove'(el) {
@@ -536,6 +578,11 @@ const ACTIONS = {
     if (ui.sheet) renderSheetRoot();
     render();
   },
+  'calendar-later'() {
+    state.settings.calendarAdded = true; // still on the Schedule tab and in Settings
+    store.save(state);
+    render();
+  },
   'install-help'() {
     openSheet({ type: 'install' });
   },
@@ -587,6 +634,9 @@ const ACTIONS = {
   },
   'onboard-finish'() {
     state.settings.onboarded = true;
+    // Start counting from now (with the last hour still due), so drops put
+    // before the app was set up don't show as missed.
+    if (!state.settings.trackFrom) state.settings.trackFrom = Date.now() - 60 * S.MIN;
     ui.sheet = null;
     renderSheetRoot();
     store.requestPersistence();
@@ -651,6 +701,13 @@ const CHANGES = {
 function bindEvents() {
   document.addEventListener('click', (e) => {
     alarm.unlockSound();
+    // Links that should also remember they were used (e.g. the calendar file); they still open.
+    const mark = e.target.closest('[data-mark]');
+    if (mark) {
+      state.settings[mark.dataset.mark] = true;
+      store.save(state);
+      setTimeout(render, 300);
+    }
     const el = e.target.closest('[data-act]');
     if (!el || el.disabled) return;
     const fn = ACTIONS[el.dataset.act];

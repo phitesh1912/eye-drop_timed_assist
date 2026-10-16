@@ -1,6 +1,6 @@
 // Records: every day so far, what was put, when and by whom.
 
-import { ymd, addDays, fmtDate, fmtTime, fmtClock, courseBounds, summarizeDay } from './schedule.js';
+import { ymd, addDays, fmtDate, fmtTime, fmtClock, courseBounds, summarizeDay, shortName } from './schedule.js';
 import { esc, icon, medChip } from './ui.js';
 import { painToday } from './view-today.js';
 
@@ -17,9 +17,20 @@ export function allDays(c) {
   const { first, last } = courseBounds(c.meds);
   const today = ymd(c.now);
   const end = today < last ? today : last;
+  const start = c.trackFrom && ymd(c.trackFrom) > first ? ymd(c.trackFrom) : first;
   const out = [];
-  for (let d = first; d <= end; d = addDays(d, 1)) out.push(summarizeDay(d, c));
+  for (let d = start; d <= end; d = addDays(d, 1)) out.push(summarizeDay(d, c));
   return out;
+}
+
+function tabletSummary(tablets) {
+  if (!tablets.length) return '';
+  if (tablets.length === 1) {
+    const t = tablets[0];
+    const mark = t.status === 'done' ? '✓' : t.status === 'missed' ? '✗' : '–';
+    return `<span>${icon('pill')} ${esc(shortName(t.med))} ${mark}</span>`;
+  }
+  return `<span>${icon('pill')} Tablets ${tablets.filter((t) => t.status === 'done').length}/${tablets.length}</span>`;
 }
 
 function statusPill(s) {
@@ -80,7 +91,6 @@ function dayLines(s, pain) {
 function dayCard(s, open, state) {
   const drops = s.doses.filter((d) => d.med.kind === 'drop');
   const dropsDone = drops.filter((d) => d.status === 'done').length;
-  const vit = s.doses.find((d) => d.med.kind === 'tablet');
   const pain = painToday(state, s.date);
   return `<article class="day-card ${open ? 'is-open' : ''} st-${s.status}">
     <button class="day-head" data-act="day-toggle" data-date="${s.date}" aria-expanded="${open}">
@@ -90,7 +100,7 @@ function dayCard(s, open, state) {
     </button>
     <div class="day-sum">
       <span>${icon('drop')} ${dropsDone}/${drops.length} drops</span>
-      ${vit ? `<span>${icon('pill')} Vitamin ${vit.status === 'done' ? '✓' : vit.status === 'missed' ? '✗' : '–'}</span>` : ''}
+      ${tabletSummary(s.doses.filter((d) => d.med.kind === 'tablet'))}
       ${pain.length ? `<span>${icon('pill')} Pain tablet ×${pain.length}</span>` : ''}
     </div>
     <div class="dots" aria-hidden="true">${s.doses.map(dot).join('')}</div>
@@ -170,14 +180,20 @@ export function reportText(c, state) {
   const put = drops.filter((d) => d.status === 'done');
   const late = put.filter((d) => d.timing !== 'ontime').length;
   const missed = drops.filter((d) => d.status === 'missed');
-  const vit = s.doses.find((d) => d.med.kind === 'tablet');
+  const tablets = s.doses.filter((d) => d.med.kind === 'tablet');
   const people = [...new Set(s.doses.map((d) => d.by).filter(Boolean))];
+  const who = state.settings.patientName ? `${state.settings.patientName}’s eye drops` : 'Eye drops';
   const lines = [
-    `💧 ${state.settings.patientName}’s eye drops · ${fmtDate(today)} (Day ${s.day})`,
+    `💧 ${who} · ${fmtDate(today)} (Day ${s.day})`,
     `${put.length === drops.length ? '✅' : '⏳'} ${put.length} of ${drops.length} drops put${put.length ? (late ? ` (${late} late)` : ' (all on time)') : ''}`,
   ];
   if (missed.length) lines.push(`⚠️ Missed: ${missed.map((d) => `${fmtTime(d.time)} ${d.med.name}`).join(', ')}`);
-  if (vit) lines.push(`💊 Vitamin: ${vit.status === 'done' ? 'taken ✓' : vit.status === 'missed' ? 'missed' : 'not yet'}`);
+  if (tablets.length === 1) {
+    const t = tablets[0];
+    lines.push(`💊 ${shortName(t.med)}: ${t.status === 'done' ? 'taken ✓' : t.status === 'missed' ? 'missed' : 'not yet'}`);
+  } else if (tablets.length) {
+    lines.push(`💊 Tablets: ${tablets.filter((t) => t.status === 'done').length} of ${tablets.length} taken`);
+  }
   const pain = painToday(state, today);
   if (pain.length) lines.push(`💊 Pain tablet: ${pain.length} given`);
   if (people.length) lines.push(`🙏 Put by ${people.join(', ')}`);

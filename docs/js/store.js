@@ -1,15 +1,16 @@
 // Saved data: settings, who put which drop when, snoozes, silenced alarms.
 // Everything lives on this phone (localStorage). Backups are plain JSON files.
 
-import { COURSE, MIN } from './schedule.js';
+import { COURSE, REGIMEN, MIN } from './schedule.js';
 
-const KEY = 'droptime:v1';
+// Each app (Grandma's, the brother's) keeps its own records.
+const key = () => REGIMEN.storageKey;
 
 export const DEFAULT_SETTINGS = {
   patientName: 'Grandma',
   people: [],
   lastPerson: '',
-  hospitalPhone: COURSE.hospitalPhone,
+  hospitalPhone: '',
   onTimeMin: 30,
   gapMin: 5,
   nagMins: [10, 20],
@@ -18,12 +19,21 @@ export const DEFAULT_SETTINGS = {
   sound: true,
   keepAwake: false,
   onboarded: false,
+  trackFrom: 0, // doses before this time (first set-up) are not counted
 };
 
 function fresh() {
+  const firstTime = REGIMEN.adjustableTime && REGIMEN.meds.find((m) => m.id === REGIMEN.adjustableTime);
   return {
     v: 1,
-    settings: { ...DEFAULT_SETTINGS, people: [], endOverrides: {} },
+    settings: {
+      ...DEFAULT_SETTINGS,
+      patientName: REGIMEN.defaultName,
+      hospitalPhone: COURSE.hospitalPhone,
+      vitaminTime: firstTime ? firstTime.phases[0].times[0] : DEFAULT_SETTINGS.vitaminTime,
+      people: [],
+      endOverrides: {},
+    },
     records: {}, // doseId -> { s: 'done' | 'skipped', at, by, t }
     pain: [],    // [{ at, by }]
     snoozes: {}, // doseId -> until
@@ -36,6 +46,7 @@ function normalize(raw) {
   const base = fresh();
   if (!raw || typeof raw !== 'object') return base;
   const settings = { ...base.settings, ...(raw.settings || {}) };
+  if (!settings.hospitalPhone) settings.hospitalPhone = COURSE.hospitalPhone;
   if (!Array.isArray(settings.people)) settings.people = [];
   settings.people = settings.people.filter((p) => typeof p === 'string' && p.trim()).map((p) => p.trim());
   if (!settings.endOverrides || typeof settings.endOverrides !== 'object') settings.endOverrides = {};
@@ -55,7 +66,7 @@ let saveError = null;
 
 export function load() {
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = localStorage.getItem(key());
     return raw ? normalize(JSON.parse(raw)) : fresh();
   } catch {
     return fresh();
@@ -65,7 +76,7 @@ export function load() {
 export function save(state) {
   prune(state);
   try {
-    localStorage.setItem(KEY, JSON.stringify(state));
+    localStorage.setItem(key(), JSON.stringify(state));
     saveError = null;
     return true;
   } catch (e) {
@@ -93,7 +104,7 @@ function prune(state) {
 
 export function onExternalChange(fn) {
   window.addEventListener('storage', (e) => {
-    if (e.key === KEY) fn(load());
+    if (e.key === key()) fn(load());
   });
 }
 
@@ -153,7 +164,7 @@ export function removePerson(state, name) {
 // ---------------------------------------------------------------- backup
 
 export function toBackup(state) {
-  return JSON.stringify({ app: 'drop-time', exportedAt: new Date().toISOString(), ...state }, null, 1);
+  return JSON.stringify({ app: 'drop-time', regimen: REGIMEN.id, exportedAt: new Date().toISOString(), ...state }, null, 1);
 }
 
 export function fromBackup(text) {
@@ -161,7 +172,12 @@ export function fromBackup(text) {
   if (!raw || raw.app !== 'drop-time' || typeof raw.records !== 'object') {
     throw new Error('This file is not a Drop Time backup.');
   }
+  // Old backups have no regimen field; they are all Grandma's.
+  if ((raw.regimen || 'grandma') !== REGIMEN.id) {
+    throw new Error('This backup belongs to the other person\'s app.');
+  }
   delete raw.app;
+  delete raw.regimen;
   delete raw.exportedAt;
   return normalize(raw);
 }

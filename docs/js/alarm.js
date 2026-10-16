@@ -55,7 +55,8 @@ let vibrateTimer = null;
 
 export function initSound() {
   if (isAndroidApp || audio) return;
-  audio = new Audio('assets/chime.wav');
+  const base = document.documentElement.dataset.base || '';
+  audio = new Audio(`${base}assets/chime.wav`);
   audio.loop = true;
   audio.preload = 'auto';
   // iPhone: let the alarm play even when the side switch is on silent.

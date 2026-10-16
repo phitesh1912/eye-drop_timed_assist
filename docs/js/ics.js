@@ -2,7 +2,7 @@
 // phones where the web app can't ring while closed (iPhone). Times are
 // "floating" local times, so 8:00 AM stays 8:00 AM on the phone.
 
-import { COURSE, addDays, courseBounds, dosesForDate, label, mealFor } from './schedule.js';
+import { COURSE, REGIMEN, addDays, courseBounds, dosesForDate, label, mealFor } from './schedule.js';
 
 const enc = new TextEncoder();
 
@@ -46,15 +46,17 @@ function eventLines(run, gapMin, stamp) {
   let desc;
   if (drops.length) {
     summary = `💧 ${drops.map((d) => label(d.med)).join(' → ')}`;
-    desc = `1 drop in the ${COURSE.eye} eye${drops.length > 1 ? ` for each. Wait ${gapMin} min between different drops` : ''}. Tick it in Drop Time.`;
+    const where = COURSE.eye === 'BOTH' ? '1 drop in each eye' : `1 drop in the ${COURSE.eye} eye`;
+    desc = `${where}${drops.length > 1 ? ` for each. Wait ${gapMin} min between different drops` : ''}. Tick it in ${REGIMEN.title}.`;
   } else {
     const t = slot.doses[0];
-    summary = `💊 ${t.med.name} (${mealFor(slot.time)})`;
-    desc = `${t.med.generic}: 1 tablet ${mealFor(slot.time)}. Tick it in Drop Time.`;
+    summary = `💊 ${t.med.name} (${mealFor(slot.time, t.med)})`;
+    desc = `${t.med.generic}: 1 tablet ${mealFor(slot.time, t.med)}. Tick it in ${REGIMEN.title}.`;
   }
   const lines = [
     'BEGIN:VEVENT',
-    `UID:droptime-${start}-${hhmm}-${slot.sig}@drop-time`,
+    // Grandma's UIDs stay as first published, so re-importing doesn't duplicate events.
+    `UID:droptime-${REGIMEN.id === 'grandma' ? '' : `${REGIMEN.id}-`}${start}-${hhmm}-${slot.sig}@drop-time`,
     `DTSTAMP:${stamp}`,
     `DTSTART:${start.replace(/-/g, '')}T${hhmm}00`,
     'DURATION:PT10M',
@@ -103,7 +105,7 @@ export function buildIcs(meds, { gapMin = 5, stamp = '20261007T000000Z' } = {}) 
     'PRODID:-//Drop Time//Eye drop reminders//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
-    'X-WR-CALNAME:Eye drops (Drop Time)',
+    `X-WR-CALNAME:Eye drops (${REGIMEN.title})`,
   ];
   for (const run of runs) lines.push(...eventLines(run, gapMin, stamp));
   lines.push('END:VCALENDAR');

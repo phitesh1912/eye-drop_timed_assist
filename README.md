@@ -1,11 +1,17 @@
 # Drop Time 💧
 
-Eye drop reminders and records for Grandma's cataract recovery (right eye, surgery on 7 Oct 2026).
-It follows the hospital's post-op sheet: it rings at every drop time, shows which bottle to use,
-times the 5-minute gap between drops, and keeps a record of who put each drop and when.
+Eye drop reminders and records that follow the hospital's post-op sheet. The app rings at every drop time,
+shows which bottle to use, times the 5-minute gap between drops, and records who put each drop and when.
 
-- **Android phones:** a real app. The phone's alarm system rings it, even when the app is closed or the phone is locked.
-- **iPhones:** the same app as a web app on the Home Screen. It rings while it's open on screen,
+There are two apps, one per prescription, and each keeps its own records:
+
+| App | For | Link (after hosting, see below) |
+| --- | --- | --- |
+| **Drop Time** | Grandma: cataract surgery on the right eye, 7 Oct 2026 | `<your site>/` and an Android app |
+| **Drop Time+** | Brother: C/PRK laser surgery on both eyes, 16 Oct 2026 | `<your site>/brother/` (made for iPhone, dark modern design) |
+
+- **Android phones:** Drop Time is a real app. The phone's alarm system rings it, even when the app is closed or the phone is locked.
+- **iPhones:** both apps work as web apps on the Home Screen. They ring while they're open on screen,
   and you can add every drop time to the iPhone Calendar as backup alerts.
 
 ## Install on Android
@@ -25,16 +31,17 @@ A new version installs over the old one and keeps the records.
 
 ## Install on iPhone
 
-The web app is the `docs/` folder. Host it once, either way:
+The web apps are the `docs/` folder (Drop Time) and `docs/brother/` (Drop Time+). Host it once, either way:
 
 - **Vercel (easiest):** on [vercel.com](https://vercel.com) sign in with GitHub, choose **Add New → Project**, import
   `eye-drop_timed_assist` and press **Deploy**. `vercel.json` already tells Vercel to serve `docs/` with no build step.
   You get a link like `https://eye-drop-timed-assist.vercel.app`, and every push updates it.
 - **Or GitHub Pages:** in the repository open **Settings → Pages**, choose **Deploy from a branch**, pick
-  `claude/eye-drops-reminder-app-65ukaj` and **/docs**, then **Save**. The app is then at
-  **https://phitesh1912.github.io/eye-drop_timed_assist/**
+  `claude/eye-drops-reminder-app-65ukaj` and **/docs**, then **Save**. The apps are then at
+  **https://phitesh1912.github.io/eye-drop_timed_assist/** and
+  **https://phitesh1912.github.io/eye-drop_timed_assist/brother/**
 
-On the iPhone:
+On the iPhone (use the `/brother/` link for Drop Time+):
 
 1. Open that link in **Safari**.
 2. Tap **Share**, then **Add to Home Screen**, then **Add**.
@@ -46,11 +53,42 @@ On the iPhone:
 The web app can only ring while it's open on screen. For the strongest setup, keep one phone or tablet near Grandma,
 on charge, with the app open and **Keep the screen on** switched on. The Android app doesn't need any of this.
 
+## Drop Time+ (the brother's app)
+
+Made for iPhone, with a dark, low-glare design (eyes are sensitive to light after PRK). It works the same way as
+Drop Time, plus a strip of today's drop times at the top of the Today screen.
+
+1. In **Safari** open `<your site>/brother/`, tap **Share → Add to Home Screen → Add**.
+2. Open **Drop Time+** from the Home Screen icon and type the name. With one name, **Done** ticks in one tap.
+3. Tap **Add to iPhone Calendar**, then **Add All**. These alerts ring even when the app is closed
+   (not when the silent switch is on).
+4. Tap **Play sound** once so the app is allowed to ring.
+
+Day 1 = surgery day, Fri 16 Oct 2026. Both eyes, 1 drop in each eye. On day 1 the app counts drops from the time
+it was set up (minus an hour), so drops from before the app existed aren't marked missed.
+
+| Box | Drop / tablet | Times | Dates |
+| --- | --- | --- | --- |
+| ① | Lotefast (loteprednol 0.5%), shake well | Month 1: 7:30, 11:30 AM · 3:30, 7:30 PM · Month 2: 7:30 AM, 7:30 PM · Month 3: 7:30 AM | 16 Oct – 15 Jan |
+| ② | Moxicip (moxifloxacin) | 7, 10 AM · 1, 4, 7, 10 PM | 1 week, 16 – 22 Oct |
+| ③ | Aquim PF (lubricant) | Month 1: every hour 7:15 AM – 6:15 PM (12 a day) · Months 2–3: 7, 9, 11 AM · 1, 3, 5 PM | 16 Oct – 15 Jan |
+| ④ | Micronac PF (nepafenac), shake well | 8 AM · 2 PM · 8 PM | 3 days, 16 – 18 Oct |
+| 💊 | Eye 360 (instead of Osmega) | 1:30 PM, after lunch | 30 tablets, 16 Oct – 14 Nov |
+| 💊 | Chymoral Forte | 9 AM · 9 PM, after food | 3 days, 16 – 18 Oct |
+| 💊 | Pain tablet (Dolo 650 / Combiflam) | only if there is pain, max 2 a day | as needed |
+
+Assumptions to check with the doctor (end dates and the Eye 360 time can be changed in Settings):
+
+- Months are counted from surgery day: month 1 is 16 Oct – 15 Nov, month 2 is 16 Nov – 15 Dec, month 3 is 16 Dec – 15 Jan.
+- GenTeal gel is crossed out on the sheet, so it isn't scheduled. The eye wipes aren't on the sheet either.
+
+Drops per day: 25 (16–18 Oct) → 22 (until 22 Oct) → 16 (until 15 Nov) → 8 (until 15 Dec) → 7 (until 15 Jan).
+
 ## Using it
 
 | Part of the screen | What it means |
 | --- | --- |
-| 🔔 **Put now** | Due now. Big card with the bottle number, box colour, **RIGHT eye**, *shake well* if needed. Tap **Done**, then tap who put it. |
+| 🔔 **Put now** | Due now. Big card with the bottle number, box colour, which eye, *shake well* if needed. Tap **Done**, then tap who put it (with only one name, **Done** ticks straight away). |
 | ⏳ **Wait** | Two drops at the same time (for example 8:00 AM: ③ then ⑤). After the first, a 5-minute timer runs and the alarm rings again for the second. |
 | 🕒 **Coming up** | The rest of today, with a countdown to the next one. |
 | ✅ **Done** | What was put, at what time, by whom, and whether it was on time (within 30 min). Tap one to undo or correct it. |
@@ -58,15 +96,15 @@ on charge, with the app open and **Keep the screen on** switched on. The Android
 - **Alarm:** rings at each time. If nobody ticks it, it reminds again after 10 and 20 minutes. **Remind in 5 min** snoozes it.
 - **Missed:** if a drop isn't ticked before the next dose of the same drop is due (or by midnight), it's marked missed so nobody doubles up.
   If it was actually put, tap it and choose **It was put. Tick it**.
-- **Pain tablet** (Dolo 650 / Ultracet): only if there is pain. Log it with **Gave a pain tablet**, at most 2 a day.
+- **Pain tablet** (Dolo 650 / Ultracet for Grandma, Dolo 650 / Combiflam for Drop Time+): only if there is pain. Log it with **Gave a pain tablet**, at most 2 a day.
 - **Records:** day by day, for example *"Thu, 8 Oct · Day 2 · All on time"*. You can share today's report to WhatsApp,
   save a spreadsheet (CSV) for the doctor, or make a backup.
-- **If the doctor changes the plan:** in Settings, change when a medicine ends, or the vitamin time.
+- **If the doctor changes the plan:** in Settings, change when a medicine ends, or the vitamin (Eye 360) time.
 
 Each phone keeps its own records. If several people tick drops on different phones, the phones don't see each other's ticks yet,
 so pick one main phone for ticking.
 
-## The schedule (from the hospital sheet)
+## Grandma's schedule (from the hospital sheet)
 
 Day 1 = surgery day, Wed 7 Oct 2026. The app starts Thu 8 Oct (Day 2), first drop at 7:00 AM. Right eye only.
 
@@ -91,15 +129,18 @@ Drops per day: 16 (8–13 Oct) → 15 → 11 → 10 → 9 → 5 → 4 → 3 (18�
 ## Privacy
 
 All records stay on the phone (browser storage on iPhone, app storage on Android) until you save a backup.
-This repository is public, so the code contains no names or hospital record numbers. Grandma's name and the family's
+This repository is public, so the code contains no names or hospital record numbers. The patient's name and the family's
 names are typed in the app and stay on the phone.
 
 ## For developers
 
 ```
-docs/                 the web app (also served by GitHub Pages and bundled into the Android app)
-  js/schedule.js      the prescription and all timing rules (pure functions)
+docs/                 Drop Time, the web app (also served by GitHub Pages and bundled into the Android app)
+  brother/            Drop Time+: its own page, manifest, icons, calendar file and offline cache; same code
+  js/regimens.js      both prescriptions (medicines, times, dates, hospital number)
+  js/schedule.js      all timing rules (pure functions), for whichever prescription the page picks
   js/app.js           start-up, clock, alarms, button handling
+  css/modern.css      the dark Drop Time+ design, on top of css/app.css
   js/view-*.js        Today / Records / Schedule / Settings screens
   js/sheets.js        pop-up sheets and the full-screen alarm
   js/ics.js           calendar export
@@ -112,7 +153,9 @@ tools/                calendar and asset generators
 ```
 
 - `npm test` runs the schedule tests in India time (no dependencies to install).
-- `npm run build:ics` regenerates `docs/calendar/drop-time.ics`. `python3 tools/make-assets.py` regenerates the icons and the chime.
+- A page picks its prescription with `<html data-regimen="brother">`. Each prescription has its own storage key,
+  so the two apps never mix records, even on the same phone.
+- `npm run build:ics` regenerates `docs/calendar/drop-time.ics` and `docs/brother/calendar/drop-time.ics`. `python3 tools/make-assets.py` regenerates the icons and the chime.
   GitHub Actions runs both on every build, decodes the signing key from `android/keystore/droptime-release.jks.b64`,
   and commits anything new back to the branch, so the repository itself only needs text files.
 - Build the APK yourself with Gradle 8.10.2 and JDK 17: `gradle -p android assembleRelease`.
