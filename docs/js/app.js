@@ -323,7 +323,9 @@ function openWho(ids, { purpose = 'done', when = null } = {}) {
   else {
     const doses = dosesById(ids);
     if (doses.length === 1) {
-      title = doses[0].med.kind === 'tablet' ? 'Who gave the vitamin tablet?' : `Who put ${S.label(doses[0].med)}?`;
+      const { kind, name } = doses[0].med;
+      // "Who gave the vitamin tablet?" / "Who gave Chymoral Forte?"
+      title = kind === 'tablet' ? `Who gave ${/tablet$/i.test(name) ? `the ${name.toLowerCase()}` : name}?` : `Who put ${S.label(doses[0].med)}?`;
     }
   }
   openSheet({ type: 'who', ids, purpose, when, title });
