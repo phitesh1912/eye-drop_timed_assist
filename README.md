@@ -7,8 +7,8 @@ There are two apps, one per prescription, and each keeps its own records:
 
 | App | For | Link (after hosting, see below) |
 | --- | --- | --- |
-| **Drop Time** | Grandma: cataract surgery on the right eye, 7 Oct 2026 | `<your site>/` and an Android app |
-| **Drop Time+** | Brother: C/PRK laser surgery on both eyes, 16 Oct 2026 | `<your site>/brother/` (made for iPhone, dark modern design) |
+| **Drop Time** | Grandma: cataract surgery on the right eye, 7 Oct 2026 | [GitHub Pages](https://phitesh1912.github.io/eye-drop_timed_assist/docs/) or `<Vercel site>/`, and an Android app |
+| **Drop Time+** | Brother: C/PRK laser surgery on both eyes, 16 Oct 2026 | [GitHub Pages](https://phitesh1912.github.io/eye-drop_timed_assist/docs/brother/) or `<Vercel site>/brother/` (made for iPhone, dark modern design) |
 
 - **Android phones:** Drop Time is a real app. The phone's alarm system rings it, even when the app is closed or the phone is locked.
 - **iPhones:** both apps work as web apps on the Home Screen. They ring while they're open on screen,
@@ -36,10 +36,11 @@ The web apps are the `docs/` folder (Drop Time) and `docs/brother/` (Drop Time+)
 - **Vercel (easiest):** on [vercel.com](https://vercel.com) sign in with GitHub, choose **Add New → Project**, import
   `eye-drop_timed_assist` and press **Deploy**. `vercel.json` already tells Vercel to serve `docs/` with no build step.
   You get a link like `https://eye-drop-timed-assist.vercel.app`, and every push updates it.
-- **Or GitHub Pages:** in the repository open **Settings → Pages**, choose **Deploy from a branch**, pick
-  `claude/eye-drops-reminder-app-65ukaj` and **/docs**, then **Save**. The apps are then at
-  **https://phitesh1912.github.io/eye-drop_timed_assist/** and
-  **https://phitesh1912.github.io/eye-drop_timed_assist/brother/**
+- **Or GitHub Pages (already on for this repository):** **Settings → Pages** publishes the branch
+  `claude/eye-drops-reminder-app-65ukaj` from **/ (root)**, so the apps are at
+  **https://phitesh1912.github.io/eye-drop_timed_assist/docs/** (Drop Time) and
+  **https://phitesh1912.github.io/eye-drop_timed_assist/docs/brother/** (Drop Time+).
+  Keep that setting as it is: a Home Screen app on an iPhone keeps its records under its own link.
 
 On the iPhone (use the `/brother/` link for Drop Time+):
 
@@ -58,7 +59,8 @@ on charge, with the app open and **Keep the screen on** switched on. The Android
 Made for iPhone, with a dark, low-glare design (eyes are sensitive to light after PRK). It works the same way as
 Drop Time, plus a strip of today's drop times at the top of the Today screen.
 
-1. In **Safari** open `<your site>/brother/`, tap **Share → Add to Home Screen → Add**.
+1. In **Safari** open **https://phitesh1912.github.io/eye-drop_timed_assist/docs/brother/** (or `<Vercel site>/brother/`),
+   tap **Share → Add to Home Screen → Add**.
 2. Open **Drop Time+** from the Home Screen icon and type the name. With one name, **Done** ticks in one tap.
 3. Tap **Add to iPhone Calendar**, then **Add All**. These alerts ring even when the app is closed
    (not when the silent switch is on).
