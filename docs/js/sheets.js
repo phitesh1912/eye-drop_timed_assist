@@ -150,6 +150,7 @@ function onboardSheet(sheet, state) {
 
 export function renderAlarm(ring, doses, c, env) {
   if (!ring) return '';
+  if (ring.test) return testAlarm(ring, env);
   // A drop alarm shows every drop waiting right now, in the order to put them.
   const isDropRing = ring.ids.some((id) => parseDoseId(id).medId.startsWith('d'));
   const list = isDropRing
@@ -178,6 +179,22 @@ export function renderAlarm(ring, doses, c, env) {
       </div>
       ${env.soundBlocked ? '<div class="alarm-note">Sound is off: the screen hasn’t been touched since the app opened. Keep the app open and touch it once.</div>' : ''}
       <div class="alarm-hint">After putting it, tick <b>Done</b> on the card.</div>
+    </div>
+  </div>`;
+}
+
+// "Test alarm in 1 min" from Settings: the same screen and sound, without a medicine.
+function testAlarm(ring, env) {
+  return `<div class="alarm" role="alertdialog" aria-labelledby="alarm-title" style="${medVars({ color: REGIMEN.ui === 'modern' ? '#14B8A6' : '#0B7A70' })}">
+    <div class="alarm-inner">
+      <div class="alarm-kicker">${icon('bell')} Test alarm</div>
+      <div class="alarm-clock">${fmtClock(ring.at)}</div>
+      <h2 id="alarm-title" class="alarm-name">${env.soundBlocked ? 'No sound yet' : 'Can you hear it?'}</h2>
+      <div class="alarm-box">${env.soundBlocked ? 'Touch the screen once and it starts.' : 'Real alarms ring like this while the app is open on screen.'}</div>
+      <div class="alarm-actions">
+        <button class="btn btn-alarm-stop" data-act="alarm-stop">${icon('check')} Stop alarm</button>
+      </div>
+      ${isIOS ? '<div class="alarm-hint">Volume: use the side buttons while it rings. iPhones don’t let web apps vibrate.</div>' : ''}
     </div>
   </div>`;
 }

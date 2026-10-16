@@ -20,7 +20,7 @@ S.setRegimen(REGIMENS[document.documentElement.dataset.regimen] || REGIMENS.gran
 document.title = S.REGIMEN.title;
 
 let state = store.load();
-const ui = { tab: 'today', sheet: null, openDay: null, planDate: null, ring: null, sig: '', soundBlocked: false, pendingRender: false };
+const ui = { tab: 'today', sheet: null, openDay: null, planDate: null, ring: null, sig: '', soundBlocked: false, pendingRender: false, testAt: null };
 let nativeCache = null;
 let nativeCacheAt = 0;
 
@@ -70,6 +70,7 @@ function env() {
     alarmProblem: alarmProblem(n),
     ringIds: ui.ring ? ui.ring.ids : [],
     soundBlocked: ui.soundBlocked,
+    testAt: ui.testAt,
   };
 }
 
@@ -207,6 +208,15 @@ function tick() {
     store.ack(state, ring.key);
     store.save(state);
     ring = null;
+  }
+
+  // "Test alarm in 1 min" in Settings (web app): rings like a real alarm until stopped, at most 2 minutes.
+  if (!ring && ui.testAt && now >= ui.testAt) {
+    if (now < ui.testAt + 2 * S.MIN) {
+      ring = { key: `test:${ui.testAt}`, test: true, at: ui.testAt, ids: [], title: 'Test alarm', text: 'If you can hear this, the alarm works.' };
+    } else {
+      ui.testAt = null;
+    }
   }
 
   handleRing(ring);
@@ -538,13 +548,15 @@ const ACTIONS = {
     render();
   },
   'alarm-stop'() {
-    if (ui.ring) store.ack(state, ui.ring.key);
+    const test = !!ui.ring?.test;
+    if (test) ui.testAt = null;
+    else if (ui.ring) store.ack(state, ui.ring.key);
     alarm.stopRinging();
-    ui.tab = 'today';
+    if (!test) ui.tab = 'today';
     commit();
   },
   'alarm-snooze'() {
-    if (!ui.ring) return;
+    if (!ui.ring || ui.ring.test) return;
     const c = ctx();
     const doses = S.evaluateDay(S.ymd(c.now), c).filter((d) => ['due', 'gap', 'queued'].includes(d.status));
     const ids = [...new Set([...ui.ring.ids, ...doses.map((d) => d.id)])];
@@ -599,6 +611,11 @@ const ACTIONS = {
   'test-alarm'() {
     alarm.nativeCall('testAlarm', 60);
     toast('Test alarm in 1 minute. Lock the phone now and wait.', { ms: 8000 });
+  },
+  'web-test-alarm'() {
+    ui.testAt = Date.now() + 60 * 1000;
+    toast('The test alarm rings in 1 minute. Keep the app open on screen.', { ms: 8000 });
+    render();
   },
   'native-fix'(el) {
     const which = el.dataset.which;

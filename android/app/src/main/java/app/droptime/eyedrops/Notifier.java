@@ -16,7 +16,10 @@ import android.net.Uri;
  * stops it, opens the app, or 10 minutes pass.
  */
 final class Notifier {
-    static final String CHANNEL = "drop_alarms_v1";
+    // v2: v1 was made with the first, silent alarm sound. A channel keeps its sound
+    // for good, so the fixed sound needs a new channel.
+    static final String CHANNEL = "drop_alarms_v2";
+    private static final String OLD_CHANNEL = "drop_alarms_v1";
     private static final int NOTIFICATION_ID = 42;
     private static final long RING_FOR_MS = 10 * 60_000L;
 
@@ -24,6 +27,7 @@ final class Notifier {
 
     static void ensureChannel(Context c) {
         NotificationManager nm = c.getSystemService(NotificationManager.class);
+        if (nm.getNotificationChannel(OLD_CHANNEL) != null) nm.deleteNotificationChannel(OLD_CHANNEL);
         if (nm.getNotificationChannel(CHANNEL) != null) return;
         NotificationChannel ch = new NotificationChannel(CHANNEL, "Eye drop alarms", NotificationManager.IMPORTANCE_HIGH);
         ch.setDescription("Rings when it is time for an eye drop or tablet");
@@ -31,7 +35,7 @@ final class Notifier {
                 .setUsage(AudioAttributes.USAGE_ALARM)
                 .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                 .build();
-        ch.setSound(Uri.parse("android.resource://" + c.getPackageName() + "/" + R.raw.chime), attrs);
+        ch.setSound(Uri.parse("android.resource://" + c.getPackageName() + "/raw/chime"), attrs);
         ch.enableVibration(true);
         ch.setVibrationPattern(new long[] {0, 700, 300, 700, 300, 700});
         ch.enableLights(true);

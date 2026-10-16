@@ -143,6 +143,11 @@ function webAlarms(state, env) {
     <div><b>Alarm sound</b><span>${env.soundReady ? 'Ready. Keep the phone volume up.' : 'Tap “Play sound” once to switch the sound on.'}</span></div>
     <button class="btn btn-small" data-act="test-sound">Play sound</button>
   </div>`);
+  rows.push(`<div class="check">
+    <span class="check-mark">${icon('bell')}</span>
+    <div><b>Test the alarm</b><span>${env.testAt ? `Rings at ${fmtClock(env.testAt)}. Keep the app open on screen.` : 'Rings in 1 minute, like a real alarm. Keep the app open on screen.'}</span></div>
+    <button class="btn btn-small" data-act="web-test-alarm" ${env.testAt ? 'disabled' : ''}>Test</button>
+  </div>`);
   if (wakeLockSupported()) {
     rows.push(`<label class="check toggle-row">
       <span class="check-mark">${icon('sun')}</span>
@@ -170,7 +175,7 @@ function webAlarms(state, env) {
   return `<section class="section">
     <h2 class="section-title">${icon('bell')}Alarms</h2>
     <div class="card checks">${rows.join('')}
-      <p class="muted small">On iPhone a web app can only ring while it is open on screen. The Calendar alerts at every drop time even when the app is closed.</p>
+      <p class="muted small">On iPhone a web app can only ring while it is open on screen, and iPhones don’t let web apps vibrate. The Calendar alerts ring and vibrate at every drop time even when the app is closed (on silent they only vibrate).</p>
       ${isIOS ? `<a class="btn btn-soft wide" href="calendar/drop-time.ics" target="_blank" rel="noopener" data-mark="calendarAdded">${icon('calendar')} Add all drop times to the iPhone Calendar</a>` : ''}
     </div>
     ${androidCard}

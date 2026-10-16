@@ -2,8 +2,8 @@
 //
 // In the Android app the phone's own alarm system rings (works even when the
 // app is closed), so the page stays quiet and only shows the alarm screen.
-// In a browser (iPhone web app) the page plays the chime itself, which only
-// works while the app is open on screen.
+// In a browser (iPhone web app) the page plays the alarm sound itself, which only
+// works while the app is open on screen. iPhones don't let web pages vibrate at all.
 
 export const native = typeof window !== 'undefined' ? window.DropTimeAndroid || null : null;
 export const isAndroidApp = !!native;
@@ -52,11 +52,12 @@ let audio = null;
 let unlocked = false;
 let ringing = false;
 let vibrateTimer = null;
+let plays = 0; // counts real plays (alarm or test), so the silent unlock never stops one
 
 export function initSound() {
   if (isAndroidApp || audio) return;
   const base = document.documentElement.dataset.base || '';
-  audio = new Audio(`${base}assets/chime.wav`);
+  audio = new Audio(`${base}assets/alarm.wav`);
   audio.loop = true;
   audio.preload = 'auto';
   // iPhone: let the alarm play even when the side switch is on silent.
@@ -72,10 +73,13 @@ export function soundReady() {
 // Browsers only allow sound after someone has touched the page once.
 export function unlockSound() {
   if (isAndroidApp || unlocked || !audio) return;
+  const before = plays;
   audio.muted = true;
   const p = audio.play();
   const done = () => {
-    if (!ringing) {
+    // Stop the silent unlock play, but not an alarm or test sound that started meanwhile
+    // (the same tap that unlocks is often the "Play sound" tap).
+    if (!ringing && plays === before) {
       audio.pause();
       audio.currentTime = 0;
     }
@@ -89,6 +93,7 @@ export function unlockSound() {
 export async function startRinging() {
   ringing = true;
   if (isAndroidApp) return true;
+  plays++;
   vibrate();
   clearInterval(vibrateTimer);
   vibrateTimer = setInterval(vibrate, 4000);
@@ -123,11 +128,13 @@ export function testSound() {
     return;
   }
   if (!audio) return;
+  plays++;
+  const mine = plays;
   audio.muted = false;
   audio.currentTime = 0;
   audio.play().then(() => {
     unlocked = true;
-    setTimeout(() => { if (!ringing) audio.pause(); }, 3500);
+    setTimeout(() => { if (!ringing && plays === mine) audio.pause(); }, 3500);
   }).catch(() => {});
   vibrate();
 }

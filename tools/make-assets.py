@@ -1,8 +1,8 @@
-"""Generates the alarm chime and the app icons.
+"""Generates the alarm sound and the app icons.
 
     python3 tools/make-assets.py
 
-Writes docs/assets/chime.wav, docs/icons/*.png, docs/brother/icons/*.png
+Writes docs/assets/alarm.wav, docs/icons/*.png, docs/brother/icons/*.png
 and the Android app's copies of the sound and icons.
 GitHub Actions runs this on every build (pip install pillow first).
 """
@@ -28,7 +28,11 @@ GLOW_B = (129, 140, 248)
 
 
 def chime(path):
-    """A clear three-note bell (E5, G#5, B5) played twice, ~2.6 s, loops well."""
+    """The alarm: a clear three-note bell (E5, G#5, B5) played twice, ~2.6 s, loops well.
+
+    Kept in the 600 Hz - 3 kHz range that phone speakers play loudly and older ears
+    still hear well, with a slow fade and gentle soft-clipping so it stays loud.
+    """
     rate = 22050
     length = 2.6
     n = int(rate * length)
@@ -38,24 +42,28 @@ def chime(path):
         s0 = int(start * rate)
         for i in range(s0, n):
             t = (i - s0) / rate
-            env = math.exp(-t * 3.2) * min(1.0, t / 0.004)
-            if env < 1e-4:
+            env = math.exp(-t * 2.4) * min(1.0, t / 0.004)
+            # The envelope starts at 0 (a 4 ms fade-in), so only stop once the note has really faded.
+            if t > 0.01 and env < 1e-3:
                 break
             v = (math.sin(2 * math.pi * freq * t)
                  + 0.45 * math.sin(2 * math.pi * freq * 2.0 * t) * math.exp(-t * 2)
                  + 0.20 * math.sin(2 * math.pi * freq * 3.01 * t) * math.exp(-t * 4))
             buf[i] += v * env
-    peak = max(abs(x) for x in buf) or 1.0
-    gain = 0.89 / peak  # about -1 dBFS
+    peak = max(abs(x) for x in buf)
+    if peak < 1e-3:
+        raise SystemExit("the alarm sound came out silent")
+    drive = 2.2
+    out = [math.tanh(drive * x / peak) / math.tanh(drive) * 0.94 for x in buf]
     # Fade the very end so the loop has no click.
     fade = int(0.05 * rate)
     for i in range(fade):
-        buf[n - 1 - i] *= i / fade
+        out[n - 1 - i] *= i / fade
     with wave.open(path, "wb") as w:
         w.setnchannels(1)
         w.setsampwidth(2)
         w.setframerate(rate)
-        w.writeframes(b"".join(struct.pack("<h", int(max(-1, min(1, x * gain)) * 32767)) for x in buf))
+        w.writeframes(b"".join(struct.pack("<h", int(max(-1.0, min(1.0, x)) * 32767)) for x in out))
 
 
 def drop_polygon(cx, cy, r, steps=180):
@@ -169,7 +177,7 @@ def android_icons(res, style):
 def main():
     os.makedirs(os.path.join(DOCS, "assets"), exist_ok=True)
     os.makedirs(os.path.join(DOCS, "icons"), exist_ok=True)
-    wav = os.path.join(DOCS, "assets", "chime.wav")
+    wav = os.path.join(DOCS, "assets", "alarm.wav")
     chime(wav)
 
     web_icons(os.path.join(DOCS, "icons"), "classic")

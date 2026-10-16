@@ -47,7 +47,8 @@ On the iPhone (use the `/brother/` link for Drop Time+):
 1. Open that link in **Safari**.
 2. Tap **Share**, then **Add to Home Screen**, then **Add**.
 3. Always open **Drop Time** from the new Home Screen icon. Records made in a Safari tab stay in that tab.
-4. Tap **Play sound** once in Settings. iPhones only allow sound after the screen has been touched.
+4. In Settings tap **Play sound**, then **Test** next to *Test the alarm*. With the app open on screen it rings a minute later.
+   iPhones only allow sound after the screen has been touched once, and they don't let web apps vibrate.
 5. Optional backup: **Schedule → Add all drop times to the phone calendar**, then tap **Add All**.
    Calendar alerts ring even when the app is closed, but not when the silent switch is on.
 
@@ -64,7 +65,7 @@ Drop Time, plus a strip of today's drop times at the top of the Today screen.
 2. Open **Drop Time+** from the Home Screen icon and type the name. With one name, **Done** ticks in one tap.
 3. Tap **Add to iPhone Calendar**, then **Add All**. These alerts ring even when the app is closed
    (not when the silent switch is on).
-4. Tap **Play sound** once so the app is allowed to ring.
+4. In Settings tap **Play sound**, then **Test** next to *Test the alarm*, and keep the app open: it rings a minute later.
 
 Day 1 = surgery day, Fri 16 Oct 2026. Both eyes, 1 drop in each eye. On day 1 the app counts drops from the time
 it was set up (minus an hour), so drops from before the app existed aren't marked missed.
@@ -157,7 +158,7 @@ tools/                calendar and asset generators
 - `npm test` runs the schedule tests in India time (no dependencies to install).
 - A page picks its prescription with `<html data-regimen="brother">`. Each prescription has its own storage key,
   so the two apps never mix records, even on the same phone.
-- `npm run build:ics` regenerates `docs/calendar/drop-time.ics` and `docs/brother/calendar/drop-time.ics`. `python3 tools/make-assets.py` regenerates the icons and the chime.
+- `npm run build:ics` regenerates `docs/calendar/drop-time.ics` and `docs/brother/calendar/drop-time.ics`. `python3 tools/make-assets.py` regenerates the icons and the alarm sound.
   GitHub Actions runs both on every build, decodes the signing key from `android/keystore/droptime-release.jks.b64`,
   and commits anything new back to the branch, so the repository itself only needs text files.
 - Build the APK yourself with Gradle 8.10.2 and JDK 17: `gradle -p android assembleRelease`.
