@@ -1,7 +1,7 @@
 // Offline support: the app keeps working without internet.
 // Network first (so updates arrive), falling back to the saved copy.
 
-const CACHE = 'droptime-v3';
+const CACHE = 'droptime-v4';
 const SHELL = [
   './',
   'index.html',
@@ -18,7 +18,11 @@ const SHELL = [
   'js/view-schedule.js',
   'js/view-settings.js',
   'js/sheets.js',
-  'assets/alarm.wav',
+  'assets/alarm-1.wav',
+  'assets/alarm-2.wav',
+  'assets/alarm-3.wav',
+  'assets/alarm-4.wav',
+  'assets/alarm-5.wav',
   'icons/icon-192.png',
   'icons/apple-touch-icon.png',
   'icons/favicon-64.png',

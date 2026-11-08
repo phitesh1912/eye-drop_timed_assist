@@ -18,6 +18,7 @@ import org.json.JSONObject;
 final class AlarmScheduler {
     static final String PREFS = "droptime_alarms";
     static final String KEY_STOPPED_AT = "stopped_at";
+    static final String KEY_LEVEL = "alarm_level"; // loudness step 1-5, set in the app's Settings
     static final String KEY_RINGING_SINCE = "ringing_since";
     private static final String KEY_LIST = "list";
     private static final String KEY_NEXT = "next_at";

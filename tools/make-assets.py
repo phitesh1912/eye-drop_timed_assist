@@ -2,7 +2,7 @@
 
     python3 tools/make-assets.py
 
-Writes docs/assets/alarm.wav, docs/icons/*.png, docs/brother/icons/*.png
+Writes docs/assets/alarm-1.wav .. alarm-5.wav, docs/icons/*.png, docs/brother/icons/*.png
 and the Android app's copies of the sound and icons.
 GitHub Actions runs this on every build (pip install pillow first).
 """
@@ -27,11 +27,18 @@ GLOW_A = (94, 234, 212)
 GLOW_B = (129, 140, 248)
 
 
-def chime(path):
+# Alarm loudness steps for the Settings screen: 5 is full volume, each step down is
+# half the loudness (-6 dB). iPhone web apps can't set a volume from code, so each
+# step is its own sound file; Android has one notification channel per step.
+LEVELS = {1: -24, 2: -18, 3: -12, 4: -6, 5: 0}
+
+
+def chime(path, gain_db=0.0):
     """The alarm: a clear three-note bell (E5, G#5, B5) played twice, ~2.6 s, loops well.
 
     Kept in the 600 Hz - 3 kHz range that phone speakers play loudly and older ears
     still hear well, with a slow fade and gentle soft-clipping so it stays loud.
+    gain_db turns the finished sound down (0 = the loudest, level 5).
     """
     rate = 22050
     length = 2.6
@@ -54,7 +61,8 @@ def chime(path):
     if peak < 1e-3:
         raise SystemExit("the alarm sound came out silent")
     drive = 2.2
-    out = [math.tanh(drive * x / peak) / math.tanh(drive) * 0.94 for x in buf]
+    volume = 10 ** (gain_db / 20)
+    out = [math.tanh(drive * x / peak) / math.tanh(drive) * 0.94 * volume for x in buf]
     # Fade the very end so the loop has no click.
     fade = int(0.05 * rate)
     for i in range(fade):
@@ -177,15 +185,16 @@ def android_icons(res, style):
 def main():
     os.makedirs(os.path.join(DOCS, "assets"), exist_ok=True)
     os.makedirs(os.path.join(DOCS, "icons"), exist_ok=True)
-    wav = os.path.join(DOCS, "assets", "alarm.wav")
-    chime(wav)
+    raw = os.path.join(ANDROID_RES, "raw")
+    os.makedirs(raw, exist_ok=True)
+    for level, db in LEVELS.items():
+        wav = os.path.join(DOCS, "assets", f"alarm-{level}.wav")
+        chime(wav, db)
+        shutil.copy(wav, os.path.join(raw, f"alarm_{level}.wav"))
 
     web_icons(os.path.join(DOCS, "icons"), "classic")
     web_icons(os.path.join(DOCS, "brother", "icons"), "modern")
 
-    raw = os.path.join(ANDROID_RES, "raw")
-    os.makedirs(raw, exist_ok=True)
-    shutil.copy(wav, os.path.join(raw, "chime.wav"))
     android_icons(ANDROID_RES, "classic")
     print("assets written")
 

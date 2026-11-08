@@ -25,19 +25,39 @@ function readWav(path) {
   throw new Error(`no audio data in ${path}`);
 }
 
-test('alarm sound is loud enough to hear', () => {
-  const { fmt, samples } = readWav('docs/assets/alarm.wav');
+const stats = (samples) => ({
+  peak: Math.max(...samples.map(Math.abs)),
+  rms: Math.sqrt(samples.reduce((a, v) => a + v * v, 0) / samples.length),
+});
+
+test('the loudest alarm is loud enough to hear', () => {
+  const { fmt, samples } = readWav('docs/assets/alarm-5.wav');
   assert.deepEqual(fmt, { format: 1, channels: 1, rate: 22050, bits: 16 });
   const seconds = samples.length / fmt.rate;
   assert.ok(seconds > 2 && seconds < 4, `length ${seconds}s`);
-  const peak = Math.max(...samples.map(Math.abs));
-  const rms = Math.sqrt(samples.reduce((a, v) => a + v * v, 0) / samples.length);
+  const { peak, rms } = stats(samples);
   assert.ok(peak > 0.8, `peak ${peak}`);
   assert.ok(rms > 0.15, `rms ${rms}`);
 });
 
-test('the Android app rings with the same sound', () => {
-  const web = readWav('docs/assets/alarm.wav').bytes;
-  const android = readWav('android/app/src/main/res/raw/chime.wav').bytes;
-  assert.ok(web.equals(android));
+test('every loudness step is audible, and each is about half as loud as the next', () => {
+  let louder = null;
+  for (let level = 5; level >= 1; level--) {
+    const { peak, rms } = stats(readWav(`docs/assets/alarm-${level}.wav`).samples);
+    assert.ok(rms > 0.01, `level ${level} is silent (rms ${rms})`);
+    if (louder) {
+      const ratio = rms / louder.rms;
+      assert.ok(ratio > 0.45 && ratio < 0.55, `level ${level} is ${ratio.toFixed(2)} of level ${level + 1}`);
+      assert.ok(peak < louder.peak);
+    }
+    louder = { peak, rms };
+  }
+});
+
+test('the Android app rings with the same sounds', () => {
+  for (let level = 1; level <= 5; level++) {
+    const web = readWav(`docs/assets/alarm-${level}.wav`).bytes;
+    const android = readWav(`android/app/src/main/res/raw/alarm_${level}.wav`).bytes;
+    assert.ok(web.equals(android), `level ${level} differs`);
+  }
 });

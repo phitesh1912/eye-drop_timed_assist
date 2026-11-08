@@ -54,10 +54,30 @@ let ringing = false;
 let vibrateTimer = null;
 let plays = 0; // counts real plays (alarm or test), so the silent unlock never stops one
 
-export function initSound() {
-  if (isAndroidApp || audio) return;
+// Alarm loudness, 1 (quiet) to 5 (loudest), chosen in Settings. iPhones don't let a web page
+// set the volume, so every step is its own sound file (each half as loud as the next).
+export const LEVELS = 5;
+export const LEVEL_NAMES = ['', 'Very quiet', 'Quiet', 'Medium', 'Loud', 'Loudest'];
+let level = LEVELS;
+
+export function clampLevel(n) {
+  const v = Math.round(Number(n));
+  return Number.isFinite(v) ? Math.max(1, Math.min(LEVELS, v)) : LEVELS;
+}
+
+function soundUrl() {
   const base = document.documentElement.dataset.base || '';
-  audio = new Audio(`${base}assets/alarm.wav`);
+  return `${base}assets/alarm-${level}.wav`;
+}
+
+export function initSound(startLevel = LEVELS) {
+  level = clampLevel(startLevel);
+  if (isAndroidApp) {
+    nativeCall('setAlarmLevel', level); // the app keeps its own copy for the phone's alarm
+    return;
+  }
+  if (audio) return;
+  audio = new Audio(soundUrl());
   audio.loop = true;
   audio.preload = 'auto';
   // iPhone: let the alarm play even when the side switch is on silent.
@@ -68,6 +88,25 @@ export function initSound() {
 
 export function soundReady() {
   return isAndroidApp || unlocked;
+}
+
+export function alarmLevel() {
+  return level;
+}
+
+// Use another loudness step from now on (alarms and the test sound).
+export function setAlarmLevel(next) {
+  level = clampLevel(next);
+  if (isAndroidApp) {
+    nativeCall('setAlarmLevel', level);
+    return;
+  }
+  if (!audio) return;
+  // Same element, new file: an iPhone keeps allowing sound on an element it has already played.
+  const wasRinging = ringing;
+  audio.src = soundUrl();
+  audio.load();
+  if (wasRinging) audio.play().catch(() => {});
 }
 
 // Browsers only allow sound after someone has touched the page once.

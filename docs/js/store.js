@@ -19,6 +19,7 @@ export const DEFAULT_SETTINGS = {
   sound: true,
   keepAwake: false,
   onboarded: false,
+  alarmLevel: 5, // alarm loudness, 1 (quiet) to 5 (loudest)
   trackFrom: 0, // doses before this time (first set-up) are not counted
 };
 
@@ -51,6 +52,8 @@ function normalize(raw) {
   settings.people = settings.people.filter((p) => typeof p === 'string' && p.trim()).map((p) => p.trim());
   if (!settings.endOverrides || typeof settings.endOverrides !== 'object') settings.endOverrides = {};
   if (!Array.isArray(settings.nagMins)) settings.nagMins = [...DEFAULT_SETTINGS.nagMins];
+  const level = Math.round(Number(settings.alarmLevel));
+  settings.alarmLevel = Number.isFinite(level) ? Math.max(1, Math.min(5, level)) : DEFAULT_SETTINGS.alarmLevel;
   return {
     ...base,
     ...raw,

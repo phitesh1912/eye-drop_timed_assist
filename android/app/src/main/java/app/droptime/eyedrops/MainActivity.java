@@ -214,7 +214,8 @@ public class MainActivity extends Activity {
                     .setUsage(AudioAttributes.USAGE_ALARM)
                     .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                     .build());
-            AssetFileDescriptor afd = getResources().openRawResourceFd(R.raw.chime);
+            int sound = getResources().getIdentifier("alarm_" + Notifier.level(this), "raw", getPackageName());
+            AssetFileDescriptor afd = getResources().openRawResourceFd(sound);
             testPlayer.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
             afd.close();
             testPlayer.prepare();

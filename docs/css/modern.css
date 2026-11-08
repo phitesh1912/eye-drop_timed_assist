@@ -159,6 +159,9 @@ html.theme-modern {
   color: #04221A; box-shadow: 0 12px 30px rgba(52, 211, 153, .3);
 }
 .theme-modern .btn-done:active { background: linear-gradient(135deg, #2DD4BF, #10B981); }
+.theme-modern .level-btn { background: rgba(255, 255, 255, .06); box-shadow: inset 0 0 0 1px var(--line); }
+.theme-modern .level-btn.is-on { background: rgba(94, 234, 212, .14); color: var(--brand); box-shadow: inset 0 0 0 2px var(--brand); }
+.theme-modern .loudness { border-color: var(--line); }
 .theme-modern .btn-soft { background: rgba(255, 255, 255, .07); color: var(--ink); border: 1px solid var(--line); }
 .theme-modern .btn-quiet { color: var(--muted); }
 .theme-modern .btn-danger { background: var(--miss-soft); color: #FECACA; border: 1px solid rgba(248, 113, 113, .3); }

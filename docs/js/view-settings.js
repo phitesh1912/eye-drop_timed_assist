@@ -2,7 +2,7 @@
 
 import { MEDS, REGIMEN, fmtDate, fmtClock, originalEnd, medStart } from './schedule.js';
 import { esc, icon, badge, medVars } from './ui.js';
-import { isAndroidApp, isIOS, isAndroidBrowser, isStandalone, wakeLockSupported, notificationsSupported } from './alarm.js';
+import { isAndroidApp, isIOS, isAndroidBrowser, isStandalone, wakeLockSupported, notificationsSupported, LEVELS, LEVEL_NAMES } from './alarm.js';
 
 const RELEASES = 'https://github.com/phitesh1912/eye-drop_timed_assist/releases/latest/download/';
 
@@ -32,7 +32,7 @@ export function renderSettings(state, c, env) {
       </div>
     </section>
 
-    ${isAndroidApp ? androidAlarms(env) : webAlarms(state, env)}
+    ${isAndroidApp ? androidAlarms(state, env) : webAlarms(state, env)}
 
     <section class="section">
       <h2 class="section-title">${icon('calendar')}If the doctor changes the plan</h2>
@@ -106,7 +106,21 @@ const BRAND_TIPS = {
   honor: 'Huawei / Honor: in Battery → App launch, set Drop Time to Manage manually and allow all.',
 };
 
-function androidAlarms(env) {
+// Five loudness steps; tapping one plays it so you can hear the difference.
+function loudness(current, note) {
+  const buttons = Array.from({ length: LEVELS }, (_, i) => i + 1).map((n) => `
+    <button class="level-btn ${n === current ? 'is-on' : ''}" data-act="alarm-level" data-level="${n}"
+      aria-pressed="${n === current}" aria-label="Loudness ${n} of ${LEVELS}: ${LEVEL_NAMES[n]}">
+      <span class="level-bars" aria-hidden="true">${'<i></i>'.repeat(n)}</span>${n}
+    </button>`).join('');
+  return `<div class="loudness">
+    <div class="loudness-head"><b>Alarm loudness</b><span>${LEVEL_NAMES[current]}</span></div>
+    <div class="level-row" role="group" aria-label="Alarm loudness">${buttons}</div>
+    <p class="muted small">Tap a number to hear it. ${note}</p>
+  </div>`;
+}
+
+function androidAlarms(state, env) {
   const n = env.native || {};
   const brand = String(n.brand || '').toLowerCase();
   const tip = BRAND_TIPS[brand] || Object.entries(BRAND_TIPS).find(([k]) => brand.includes(k))?.[1];
@@ -121,6 +135,7 @@ function androidAlarms(env) {
       ${check(volOk, 'Alarm volume is on', volOk ? 'Uses the phone’s alarm volume, rings even on silent.' : 'The phone’s alarm volume is at zero.', 'volume', 'Open')}
       ${tip ? `<div class="check is-tip"><span class="check-mark">${icon('info')}</span><div><b>Tip for this phone</b><span>${esc(tip.replace(/Drop Time/g, REGIMEN.title))}</span></div><button class="btn btn-small" data-act="native-fix" data-which="app">App info</button></div>` : ''}
       <div class="next-alarm">${icon('clock')} Next alarm: <b>${n.nextAlarmAt ? `${esc(fmtDate(localDate(n.nextAlarmAt)))}, ${fmtClock(n.nextAlarmAt)}` : 'none set'}</b></div>
+      ${loudness(state.settings.alarmLevel, 'On top of the phone’s alarm volume (the volume buttons while an alarm rings).')}
       <div class="btn-row">
         <button class="btn btn-soft" data-act="test-alarm">${icon('bell')} Test alarm in 1 min</button>
         <button class="btn btn-soft" data-act="test-sound">${icon('volume')} Play sound</button>
@@ -148,6 +163,7 @@ function webAlarms(state, env) {
     <div><b>Test the alarm</b><span>${env.testAt ? `Rings at ${fmtClock(env.testAt)}. Keep the app open on screen.` : 'Rings in 1 minute, like a real alarm. Keep the app open on screen.'}</span></div>
     <button class="btn btn-small" data-act="web-test-alarm" ${env.testAt ? 'disabled' : ''}>Test</button>
   </div>`);
+  rows.push(loudness(s.alarmLevel, isIOS ? 'On an iPhone, the side volume buttons also change it.' : 'The phone’s volume also changes it.'));
   if (wakeLockSupported()) {
     rows.push(`<label class="check toggle-row">
       <span class="check-mark">${icon('sun')}</span>

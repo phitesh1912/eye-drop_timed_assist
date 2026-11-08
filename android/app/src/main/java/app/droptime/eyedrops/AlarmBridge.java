@@ -32,9 +32,10 @@ final class AlarmBridge {
             o.put("brand", Build.MANUFACTURER);
             o.put("model", Build.MODEL);
             o.put("appVersion", versionName());
+            o.put("alarmLevel", Notifier.level(context));
 
             NotificationManager nm = context.getSystemService(NotificationManager.class);
-            NotificationChannel ch = nm.getNotificationChannel(Notifier.CHANNEL);
+            NotificationChannel ch = nm.getNotificationChannel(Notifier.channelId(Notifier.level(context)));
             boolean channelOk = ch == null || ch.getImportance() >= NotificationManager.IMPORTANCE_HIGH;
             o.put("notifications", nm.areNotificationsEnabled() && channelOk);
             o.put("fullScreen", Build.VERSION.SDK_INT < 34 || nm.canUseFullScreenIntent());
@@ -59,6 +60,12 @@ final class AlarmBridge {
     @JavascriptInterface
     public void setAlarms(String json) {
         AlarmScheduler.saveList(context, json);
+    }
+
+    /** Alarm loudness step 1 (quiet) to 5 (loudest), from the Settings screen. */
+    @JavascriptInterface
+    public void setAlarmLevel(int level) {
+        Notifier.setLevel(context, level);
     }
 
     @JavascriptInterface

@@ -43,7 +43,7 @@ jobs:
       # here, so the repository only needs text files.
       - name: Generate missing icons, sound, calendar and signing key
         run: |
-          if [ ! -f docs/icons/icon-192.png ] || [ ! -f android/app/src/main/res/raw/chime.wav ]; then
+          if [ ! -f docs/icons/icon-192.png ] || [ ! -f android/app/src/main/res/raw/alarm_5.wav ]; then
             pip install --quiet pillow
             python3 tools/make-assets.py
           fi

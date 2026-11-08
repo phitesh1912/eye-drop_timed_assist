@@ -1,7 +1,7 @@
 // Offline support for Drop Time+ (the brother's app): works without internet.
 // Network first (so updates arrive), falling back to the saved copy.
 
-const CACHE = 'droptime-brother-v2';
+const CACHE = 'droptime-brother-v3';
 const SHELL = [
   './',
   'index.html',
@@ -22,7 +22,11 @@ const SHELL = [
   '../js/view-schedule.js',
   '../js/view-settings.js',
   '../js/sheets.js',
-  '../assets/alarm.wav',
+  '../assets/alarm-1.wav',
+  '../assets/alarm-2.wav',
+  '../assets/alarm-3.wav',
+  '../assets/alarm-4.wav',
+  '../assets/alarm-5.wav',
 ];
 
 self.addEventListener('install', (event) => {

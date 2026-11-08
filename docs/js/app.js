@@ -421,6 +421,7 @@ function pickBackup() {
       }, () => {
         state = next;
         state.settings.onboarded = true;
+        alarm.setAlarmLevel(state.settings.alarmLevel);
         commit();
         toast('Backup restored.');
       });
@@ -603,6 +604,13 @@ const ACTIONS = {
   'unlock-sound'() {
     alarm.testSound();
     setTimeout(render, 400);
+  },
+  'alarm-level'(el) {
+    state.settings.alarmLevel = alarm.clampLevel(el.dataset.level);
+    store.save(state);
+    alarm.setAlarmLevel(state.settings.alarmLevel);
+    alarm.testSound(); // let them hear the step they just chose
+    render();
   },
   'test-sound'() {
     alarm.testSound();
@@ -801,7 +809,7 @@ function registerServiceWorker() {
 }
 
 function start() {
-  alarm.initSound();
+  alarm.initSound(state.settings.alarmLevel);
   if (state.settings.keepAwake) alarm.setKeepAwake(true);
   bindEvents();
   if (!state.settings.onboarded) ui.sheet = { type: 'onboard', step: 1 };

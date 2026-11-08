@@ -97,6 +97,7 @@ Drops per day: 25 (16–18 Oct) → 22 (until 22 Oct) → 16 (until 15 Nov) → 
 | ✅ **Done** | What was put, at what time, by whom, and whether it was on time (within 30 min). Tap one to undo or correct it. |
 
 - **Alarm:** rings at each time. If nobody ticks it, it reminds again after 10 and 20 minutes. **Remind in 5 min** snoozes it.
+- **Alarm loudness:** in **Settings → Alarms**, tap 1 (very quiet) to 5 (loudest) and the app plays that step so you can hear it. It is the same on every phone that uses the app, and each step is half as loud as the next. On top of that, the phone's own volume still counts (the side buttons on an iPhone, the alarm volume on Android).
 - **Missed:** if a drop isn't ticked before the next dose of the same drop is due (or by midnight), it's marked missed so nobody doubles up.
   If it was actually put, tap it and choose **It was put. Tick it**.
 - **Pain tablet** (Dolo 650 / Ultracet for Grandma, Dolo 650 / Combiflam for Drop Time+): only if there is pain. Log it with **Gave a pain tablet**, at most 2 a day.
@@ -158,6 +159,7 @@ tools/                calendar and asset generators
 - `npm test` runs the schedule tests in India time (no dependencies to install).
 - A page picks its prescription with `<html data-regimen="brother">`. Each prescription has its own storage key,
   so the two apps never mix records, even on the same phone.
+- The alarm sound comes in five loudness steps (`docs/assets/alarm-1.wav` to `alarm-5.wav`, copied to `android/app/src/main/res/raw/alarm_1.wav` to `alarm_5.wav`). An iPhone web page can't set a volume, so the web app swaps the sound file. On Android each step has its own notification channel, because a channel keeps its sound for good; only the chosen step's channel exists.
 - `npm run build:ics` regenerates `docs/calendar/drop-time.ics` and `docs/brother/calendar/drop-time.ics`. `python3 tools/make-assets.py` regenerates the icons and the alarm sound.
   GitHub Actions runs both on every build, decodes the signing key from `android/keystore/droptime-release.jks.b64`,
   and commits anything new back to the branch, so the repository itself only needs text files.
